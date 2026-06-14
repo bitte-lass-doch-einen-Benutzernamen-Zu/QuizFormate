@@ -3,18 +3,25 @@ import { useAuth } from './authContext'
 import './auth.css'
 
 export default function AccessPage() {
-  const { configured, signInAdmin, joinWithCode } = useAuth()
+  const {
+    configured,
+    signInAdmin,
+    requestPasswordReset,
+    joinWithCode,
+  } = useAuth()
   const [mode, setMode] = useState<'guest' | 'admin'>('guest')
   const [displayName, setDisplayName] = useState('')
   const [code, setCode] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
+    setNotice('')
     setSubmitting(true)
     try {
       if (mode === 'admin') {
@@ -24,6 +31,24 @@ export default function AccessPage() {
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Anmeldung fehlgeschlagen.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const resetPassword = async () => {
+    setError('')
+    setNotice('')
+    setSubmitting(true)
+    try {
+      await requestPasswordReset()
+      setNotice('Eine neue Passwort-E-Mail wurde versendet.')
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Die E-Mail konnte nicht versendet werden.',
+      )
     } finally {
       setSubmitting(false)
     }
@@ -101,6 +126,7 @@ export default function AccessPage() {
             )}
 
             {error && <p className="access-error">{error}</p>}
+            {notice && <p className="access-success">{notice}</p>}
             <button disabled={submitting} type="submit">
               {submitting
                 ? 'Bitte warten...'
@@ -108,6 +134,16 @@ export default function AccessPage() {
                   ? 'Beitreten'
                   : 'Anmelden'}
             </button>
+            {mode === 'admin' && (
+              <button
+                className="forgot-password"
+                disabled={submitting}
+                onClick={resetPassword}
+                type="button"
+              >
+                Passwort vergessen
+              </button>
+            )}
           </form>
         )}
 
@@ -115,6 +151,7 @@ export default function AccessPage() {
           className="access-mode"
           onClick={() => {
             setError('')
+            setNotice('')
             setMode((current) => (current === 'guest' ? 'admin' : 'guest'))
           }}
           type="button"

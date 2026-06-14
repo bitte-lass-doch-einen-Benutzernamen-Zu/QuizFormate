@@ -93,11 +93,31 @@
 }
 
 .access-error,
-.access-warning {
+.access-warning,
+.access-success {
   padding: 12px;
   border-radius: 10px;
   color: #ffd6dc;
   background: rgba(255, 72, 103, 0.13);
+}
+
+.access-success {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+  color: #c9fff5;
+  background: rgba(0, 245, 212, 0.11);
+}
+
+.access-success a {
+  color: #00f5d4;
+}
+
+.access-card .forgot-password {
+  margin-top: -8px;
+  border-color: transparent;
+  color: #b8b3ca;
+  background: transparent;
 }
 
 .access-warning {

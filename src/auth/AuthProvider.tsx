@@ -134,6 +134,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const requestPasswordReset = async () => {
+    if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+    if (!adminEmail) {
+      throw new Error('Die Admin-E-Mail ist noch nicht konfiguriert.')
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(adminEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    })
+    if (error) throw error
+  }
+
+  const updatePassword = async (password: string) => {
+    if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
+    const { error } = await supabase.auth.updateUser({ password })
+    if (error) throw error
+    await supabase.auth.signOut()
+    setSession(null)
+    setRole(null)
+  }
+
   const joinWithCode = async (code: string, displayName: string) => {
     if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
     await supabase.auth.signOut()
@@ -191,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role,
     guestAccess,
     signInAdmin,
+    requestPasswordReset,
+    updatePassword,
     joinWithCode,
     createInvite,
     signOut,
