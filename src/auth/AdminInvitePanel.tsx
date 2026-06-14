@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { getErrorMessage } from '../lib/errors'
 import { useAuth } from './authContext'
 import './auth.css'
 
@@ -21,7 +22,7 @@ export default function AdminInvitePanel() {
     try {
       setInvite(await createInvite(title, hours))
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Code konnte nicht erstellt werden.')
+      setError(getErrorMessage(reason, 'Code konnte nicht erstellt werden.'))
     } finally {
       setSubmitting(false)
     }
