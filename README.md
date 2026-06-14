@@ -93,7 +93,7 @@ und anschließend in `src/app/routes.tsx` registriert werden.
 
 Die App unterstützt einen dauerhaften Admin-Login und temporäre Gastzugänge:
 
-- Admins melden sich mit E-Mail und Passwort an und steuern die Formate.
+- Admins melden sich mit Benutzername und Passwort an und steuern die Formate.
 - Gäste treten mit Name und zeitlich begrenztem Invite-Code bei.
 - Gäste erhalten ausschließlich die Viewer-Rolle.
 - Rollen und Zugriffe werden serverseitig über Supabase Row Level Security

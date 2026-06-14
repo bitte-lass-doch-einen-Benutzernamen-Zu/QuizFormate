@@ -6,8 +6,9 @@
 3. Den Inhalt von
    `supabase/migrations/202606140001_auth_and_invites.sql` im **SQL Editor**
    ausführen.
-4. Unter **Authentication > Users** einen Benutzer mit E-Mail und Passwort
-   für den Host erstellen.
+4. Unter **Authentication > Users** einen Benutzer mit einer echten oder
+   internen E-Mail und dem gewünschten Admin-Passwort erstellen. In der App
+   meldet sich der Host trotzdem mit dem Benutzernamen `admin` an.
 5. Im SQL Editor dessen Rolle setzen:
 
 ```sql
@@ -25,6 +26,7 @@ where id = (
 ```dotenv
 VITE_SUPABASE_URL=https://DEIN_PROJEKT.supabase.co
 VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+VITE_ADMIN_EMAIL=E-MAIL_DES_SUPABASE_ADMIN_USERS
 ```
 
 8. Dieselben Variablen in Vercel unter **Project Settings > Environment

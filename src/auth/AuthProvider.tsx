@@ -105,13 +105,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe()
   }, [loadAccess])
 
-  const signInAdmin = async (email: string, password: string) => {
+  const signInAdmin = async (username: string, password: string) => {
     if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+    if (!adminEmail) {
+      throw new Error('Die Admin-E-Mail ist noch nicht konfiguriert.')
+    }
+    if (username.trim().toLowerCase() !== 'admin') {
+      throw new Error('Benutzername oder Passwort ist falsch.')
+    }
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: adminEmail,
       password,
     })
-    if (error) throw error
+    if (error) throw new Error('Benutzername oder Passwort ist falsch.')
     setLoading(true)
     await loadAccess(data.session)
     if (data.session && role !== 'admin') {

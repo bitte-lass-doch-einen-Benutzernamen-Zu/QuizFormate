@@ -16,7 +16,7 @@ export type AuthContextValue = {
   session: Session | null
   role: AppRole | null
   guestAccess: GuestAccess | null
-  signInAdmin: (email: string, password: string) => Promise<void>
+  signInAdmin: (username: string, password: string) => Promise<void>
   joinWithCode: (code: string, displayName: string) => Promise<void>
   createInvite: (
     title: string,
