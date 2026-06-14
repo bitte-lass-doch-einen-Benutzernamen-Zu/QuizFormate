@@ -31,6 +31,7 @@ export default function AnswersPage() {
                 className="live-answer-image"
                 src={activeQuestion.image}
                 alt="Bild zur aktuellen Quizfrage"
+                decoding="async"
               />
             )}
             {activeQuestion.audio && (
@@ -74,6 +75,8 @@ export default function AnswersPage() {
                         className="answer-card-image"
                         src={question.image}
                         alt={`Bild für ${question.points} Punkte`}
+                        decoding="async"
+                        loading="lazy"
                       />
                     )}
                     {question.audio && (

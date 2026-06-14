@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { preloadAdminRoute } from '../app/routes'
 import { useAuth } from './authContext'
 import './auth.css'
 
@@ -24,7 +25,10 @@ export default function AccessPage() {
     setSubmitting(true)
     try {
       if (mode === 'admin') {
-        await signInAdmin(password)
+        await Promise.all([
+          signInAdmin(password),
+          preloadAdminRoute(window.location.pathname),
+        ])
       } else {
         await joinWithCode(code, displayName)
       }

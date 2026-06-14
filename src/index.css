@@ -13,3 +13,40 @@ html, body, #root { min-width: 320px; min-height: 100%; }
 body { margin: 0; min-height: 100vh; }
 button { font: inherit; }
 button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+.app-loader {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  background: #05030b;
+}
+
+.app-loader-mark {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(0, 245, 212, 0.18);
+  border-top-color: #00f5d4;
+  border-radius: 50%;
+  animation: app-loader-spin 700ms linear infinite;
+}
+
+.app-loader strong {
+  color: #fff;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-loader span {
+  color: #8d879e;
+  font-size: 0.85rem;
+}
+
+@keyframes app-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loader-mark { animation-duration: 1.5s; }
+}

@@ -1,25 +1,38 @@
+import { lazy, Suspense } from 'react'
+import AppLoader from './app/AppLoader'
 import AccessPage from './auth/AccessPage'
-import AdminInvitePanel from './auth/AdminInvitePanel'
 import { useAuth } from './auth/authContext'
-import ResetPasswordPage from './auth/ResetPasswordPage'
-import ViewerPage from './auth/ViewerPage'
 import { resolveRoute } from './app/routes'
+
+const AdminInvitePanel = lazy(() => import('./auth/AdminInvitePanel'))
+const ResetPasswordPage = lazy(() => import('./auth/ResetPasswordPage'))
+const ViewerPage = lazy(() => import('./auth/ViewerPage'))
 
 function App() {
   const { configured, loading, role } = useAuth()
 
   if (window.location.pathname === '/reset-password') {
-    return <ResetPasswordPage />
+    return (
+      <Suspense fallback={<AppLoader />}>
+        <ResetPasswordPage />
+      </Suspense>
+    )
   }
-  if (loading) return <main aria-busy="true" />
+  if (loading) return <AppLoader />
   if (!configured || !role) return <AccessPage />
-  if (role === 'viewer') return <ViewerPage />
+  if (role === 'viewer') {
+    return (
+      <Suspense fallback={<AppLoader />}>
+        <ViewerPage />
+      </Suspense>
+    )
+  }
 
   return (
-    <>
+    <Suspense fallback={<AppLoader />}>
       <AdminInvitePanel />
       {resolveRoute(window.location.pathname)}
-    </>
+    </Suspense>
   )
 }
 

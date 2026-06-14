@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { allQuestions, boards } from '../data/questions'
 import {
   createTeam,
@@ -21,20 +21,40 @@ export function useQuizDuellGame() {
   const [memberDrafts, setMemberDrafts] = useState<Record<string, string>>({})
 
   const activeTeam = game.teams[game.activeTeamIndex] ?? game.teams[0]
-  const activeBoard =
-    boards.find((board) => board.id === game.activeBoardId) ?? boards[0]
-  const activeQuestion = allQuestions.find(
-    (question) => question.id === game.activeQuestionId,
+  const activeBoard = useMemo(
+    () => boards.find((board) => board.id === game.activeBoardId) ?? boards[0],
+    [game.activeBoardId],
   )
-  const boardQuestions = activeBoard.categories.flatMap(
-    (category) => category.questions,
+  const activeQuestion = useMemo(
+    () =>
+      allQuestions.find((question) => question.id === game.activeQuestionId),
+    [game.activeQuestionId],
   )
-  const playedOnBoard = boardQuestions.filter((question) =>
-    game.playedQuestionIds.includes(question.id),
-  ).length
-  const highestScore = Math.max(...game.teams.map((team) => team.score))
-  const winners = game.teams.filter((team) => team.score === highestScore)
-  const standings = [...game.teams].sort((a, b) => b.score - a.score)
+  const boardQuestions = useMemo(
+    () =>
+      activeBoard.categories.flatMap((category) => category.questions),
+    [activeBoard],
+  )
+  const playedQuestionIds = useMemo(
+    () => new Set(game.playedQuestionIds),
+    [game.playedQuestionIds],
+  )
+  const playedOnBoard = useMemo(
+    () =>
+      boardQuestions.filter((question) => playedQuestionIds.has(question.id))
+        .length,
+    [boardQuestions, playedQuestionIds],
+  )
+  const { highestScore, winners, standings } = useMemo(() => {
+    const nextHighestScore = Math.max(
+      ...game.teams.map((team) => team.score),
+    )
+    return {
+      highestScore: nextHighestScore,
+      winners: game.teams.filter((team) => team.score === nextHighestScore),
+      standings: [...game.teams].sort((a, b) => b.score - a.score),
+    }
+  }, [game.teams])
 
   useEffect(() => {
     if (!game.feedback) return

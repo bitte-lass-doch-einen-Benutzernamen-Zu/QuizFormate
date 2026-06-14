@@ -1,17 +1,20 @@
-import type { ReactNode } from 'react'
-import AnswersPage from '../formats/quiz-duell/pages/AnswersPage'
-import QuizDuellPage from '../formats/quiz-duell/pages/QuizDuellPage'
+import { lazy, type ComponentType } from 'react'
 
-type AppRoute = {
-  path: string
-  element: ReactNode
+const loadQuizDuell = () =>
+  import('../formats/quiz-duell/pages/QuizDuellPage')
+const loadAnswers = () =>
+  import('../formats/quiz-duell/pages/AnswersPage')
+
+const routeComponents: Record<string, ComponentType> = {
+  '/': lazy(loadQuizDuell),
+  '/answers': lazy(loadAnswers),
 }
 
-const routes: AppRoute[] = [
-  { path: '/answers', element: <AnswersPage /> },
-  { path: '/', element: <QuizDuellPage /> },
-]
+export function preloadAdminRoute(pathname: string) {
+  return pathname === '/answers' ? loadAnswers() : loadQuizDuell()
+}
 
 export function resolveRoute(pathname: string) {
-  return routes.find((route) => route.path === pathname)?.element ?? routes[1].element
+  const Route = routeComponents[pathname] ?? routeComponents['/']
+  return <Route />
 }
