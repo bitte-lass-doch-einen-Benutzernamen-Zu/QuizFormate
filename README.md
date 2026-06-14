@@ -88,3 +88,16 @@ src/
 
 Weitere Quizformate können als eigener Ordner unter `src/formats` ergänzt
 und anschließend in `src/app/routes.tsx` registriert werden.
+
+## Anmeldung und Einladungen
+
+Die App unterstützt einen dauerhaften Admin-Login und temporäre Gastzugänge:
+
+- Admins melden sich mit E-Mail und Passwort an und steuern die Formate.
+- Gäste treten mit Name und zeitlich begrenztem Invite-Code bei.
+- Gäste erhalten ausschließlich die Viewer-Rolle.
+- Rollen und Zugriffe werden serverseitig über Supabase Row Level Security
+  geprüft.
+
+Die Einrichtung ist unter [`supabase/README.md`](supabase/README.md)
+beschrieben.

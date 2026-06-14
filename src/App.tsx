@@ -1,7 +1,22 @@
+import AccessPage from './auth/AccessPage'
+import AdminInvitePanel from './auth/AdminInvitePanel'
+import { useAuth } from './auth/authContext'
+import ViewerPage from './auth/ViewerPage'
 import { resolveRoute } from './app/routes'
 
 function App() {
-  return resolveRoute(window.location.pathname)
+  const { configured, loading, role } = useAuth()
+
+  if (loading) return <main aria-busy="true" />
+  if (!configured || !role) return <AccessPage />
+  if (role === 'viewer') return <ViewerPage />
+
+  return (
+    <>
+      <AdminInvitePanel />
+      {resolveRoute(window.location.pathname)}
+    </>
+  )
 }
 
 export default App

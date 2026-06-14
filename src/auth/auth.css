@@ -1,0 +1,155 @@
+.access-page,
+.viewer-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(126, 34, 206, 0.22), transparent 34%),
+    radial-gradient(circle at 80% 90%, rgba(0, 245, 212, 0.14), transparent 32%),
+    #05030b;
+}
+
+.access-card,
+.viewer-card {
+  width: min(100%, 480px);
+  padding: 32px;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 20px;
+  background: rgba(12, 8, 24, 0.96);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.access-brand span,
+.viewer-status {
+  color: #00f5d4;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.access-brand h1,
+.viewer-card h1 {
+  margin: 8px 0;
+  font-size: clamp(2rem, 8vw, 3.4rem);
+}
+
+.access-brand p,
+.viewer-card p {
+  color: #b8b3ca;
+  line-height: 1.6;
+}
+
+.access-card form,
+.invite-popover form {
+  display: grid;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.access-card label,
+.invite-popover label {
+  display: grid;
+  gap: 7px;
+  color: #d8d4e6;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.access-card input,
+.invite-popover input {
+  width: 100%;
+  border: 1px solid #39304f;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  background: #0a0712;
+}
+
+.access-card button,
+.viewer-card button,
+.admin-session button,
+.invite-popover button {
+  border: 1px solid rgba(0, 245, 212, 0.45);
+  border-radius: 10px;
+  padding: 11px 16px;
+  color: #fff;
+  background: rgba(0, 245, 212, 0.12);
+  cursor: pointer;
+}
+
+.access-card form > button {
+  margin-top: 8px;
+  font-weight: 800;
+}
+
+.access-mode {
+  width: 100%;
+  margin-top: 14px;
+  border-color: transparent !important;
+  color: #aaa2bd !important;
+  background: transparent !important;
+}
+
+.access-error,
+.access-warning {
+  padding: 12px;
+  border-radius: 10px;
+  color: #ffd6dc;
+  background: rgba(255, 72, 103, 0.13);
+}
+
+.access-warning {
+  margin-top: 24px;
+}
+
+.viewer-placeholder {
+  margin: 28px 0;
+  padding: 24px;
+  border: 1px dashed #4b4260;
+  border-radius: 14px;
+  color: #b8b3ca;
+  line-height: 1.6;
+}
+
+.admin-session {
+  position: fixed;
+  z-index: 100;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.invite-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(360px, calc(100vw - 24px));
+  padding: 20px;
+  border: 1px solid #423656;
+  border-radius: 14px;
+  background: #0b0714;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+}
+
+.invite-popover h2 {
+  margin: 0;
+}
+
+.invite-result {
+  display: grid;
+  gap: 6px;
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+  background: rgba(167, 139, 250, 0.12);
+}
+
+.invite-result strong {
+  color: #00f5d4;
+  font-size: 2rem;
+  letter-spacing: 0.2em;
+}
