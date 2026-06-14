@@ -105,33 +105,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => listener.subscription.unsubscribe()
   }, [loadAccess])
 
-  const signInAdmin = async (username: string, password: string) => {
+  const signInAdmin = async (password: string) => {
     if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
     const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
     if (!adminEmail) {
       throw new Error('Die Admin-E-Mail ist noch nicht konfiguriert.')
     }
-    if (username.trim().toLowerCase() !== 'admin') {
-      throw new Error('Benutzername oder Passwort ist falsch.')
-    }
+    setLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({
       email: adminEmail,
       password,
     })
-    if (error) throw new Error('Benutzername oder Passwort ist falsch.')
-    setLoading(true)
-    await loadAccess(data.session)
-    if (data.session && role !== 'admin') {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.session.user.id)
-        .maybeSingle()
-      if (profile?.role !== 'admin') {
-        await supabase.auth.signOut()
-        throw new Error('Dieses Konto besitzt keine Admin-Rolle.')
-      }
+    if (error) {
+      setLoading(false)
+      throw new Error(
+        error.code === 'invalid_credentials'
+          ? 'Das Passwort ist falsch.'
+          : `Anmeldung fehlgeschlagen: ${error.message}`,
+      )
     }
+    if (!data.session) {
+      setLoading(false)
+      throw new Error('Supabase hat keine Sitzung erstellt.')
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.session.user.id)
+      .maybeSingle()
+
+    if (profileError || profile?.role !== 'admin') {
+      await supabase.auth.signOut()
+      setLoading(false)
+      throw new Error('Dieses Konto besitzt keine Admin-Rolle.')
+    }
+
+    setSession(data.session)
+    setGuestAccess(null)
+    setRole('admin')
+    setLoading(false)
   }
 
   const requestPasswordReset = async () => {

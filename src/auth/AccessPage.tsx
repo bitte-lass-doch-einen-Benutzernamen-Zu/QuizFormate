@@ -12,7 +12,6 @@ export default function AccessPage() {
   const [mode, setMode] = useState<'guest' | 'admin'>('guest')
   const [displayName, setDisplayName] = useState('')
   const [code, setCode] = useState('')
-  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -25,7 +24,7 @@ export default function AccessPage() {
     setSubmitting(true)
     try {
       if (mode === 'admin') {
-        await signInAdmin(username, password)
+        await signInAdmin(password)
       } else {
         await joinWithCode(code, displayName)
       }
@@ -105,11 +104,9 @@ export default function AccessPage() {
                 <label>
                   Benutzername
                   <input
-                    autoCapitalize="none"
                     autoComplete="username"
-                    onChange={(event) => setUsername(event.target.value)}
-                    required
-                    value={username}
+                    readOnly
+                    value="admin"
                   />
                 </label>
                 <label>
