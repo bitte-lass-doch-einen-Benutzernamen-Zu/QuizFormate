@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [role, setRole] = useState<AppRole | null>(null)
   const [guestAccess, setGuestAccess] = useState<GuestAccess | null>(null)
+  const authOperationRef = useRef(0)
 
   const loadAccess = useCallback(async (nextSession: Session | null) => {
     setSession(nextSession)
@@ -89,20 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) return
 
+    const operation = authOperationRef.current
     supabase.auth.getSession().then(({ data }) => {
+      if (authOperationRef.current !== operation) return
       loadAccess(data.session).catch(() => setLoading(false))
     })
-
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        setLoading(true)
-        window.setTimeout(() => {
-          loadAccess(nextSession).catch(() => setLoading(false))
-        }, 0)
-      },
-    )
-
-    return () => listener.subscription.unsubscribe()
   }, [loadAccess])
 
   const signInAdmin = async (password: string) => {
@@ -111,6 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!adminEmail) {
       throw new Error('Die Admin-E-Mail ist noch nicht konfiguriert.')
     }
+    authOperationRef.current += 1
     setLoading(true)
     const { data, error } = await supabase.auth.signInWithPassword({
       email: adminEmail,
@@ -163,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
     const { error } = await supabase.auth.updateUser({ password })
     if (error) throw error
+    authOperationRef.current += 1
     await supabase.auth.signOut()
     setSession(null)
     setRole(null)
@@ -170,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const joinWithCode = async (code: string, displayName: string) => {
     if (!supabase) throw new Error('Supabase ist noch nicht konfiguriert.')
+    authOperationRef.current += 1
     await supabase.auth.signOut()
     const { data: authData, error: authError } =
       await supabase.auth.signInAnonymously()
@@ -212,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const signOut = async () => {
+    authOperationRef.current += 1
     if (supabase) await supabase.auth.signOut()
     setSession(null)
     setRole(null)
