@@ -175,10 +175,9 @@ Deno.serve(async (request) => {
     ])
 
     const form = new FormData()
-    form.append('model', 'gpt-image-1.5')
+    form.append('model', 'gpt-image-2')
     form.append('image[]', firstImage, `${firstChampion.id}.jpg`)
     form.append('image[]', secondImage, `${secondChampion.id}.jpg`)
-    form.append('input_fidelity', 'high')
     form.append('quality', 'medium')
     form.append('size', '1536x1024')
     form.append('output_format', 'webp')
