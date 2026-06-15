@@ -467,6 +467,13 @@
   background: rgba(167, 139, 250, .03);
 }
 
+.fusion-error {
+  margin: 6px 0 0;
+  color: #ff7897;
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
 .fusion-readiness.ready {
   border-color: rgba(0, 245, 212, .38);
   background: rgba(0, 245, 212, .045);
@@ -707,6 +714,11 @@
 }
 
 .champion-grid > button:hover { border-color: rgba(255, 78, 205, .5); }
+
+.champion-grid > button:disabled {
+  cursor: wait;
+  opacity: .55;
+}
 
 .champion-grid > button.selected {
   border-color: #00f5d4;

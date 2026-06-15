@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  generateMorph,
+  type GeneratedMorph,
+} from '../formats/morph-duell/api/generateMorph'
+import {
   loadLeagueChampions,
   type LeagueChampion,
 } from '../formats/morph-duell/data/leagueChampions'
-import {
-  findMorphQuestion,
-  type MorphQuestion,
-} from '../formats/morph-duell/data/morphQuestions'
 import './formats.css'
 
 export default function MorphDuellPage() {
@@ -15,8 +15,10 @@ export default function MorphDuellPage() {
   const [query, setQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [activeMorph, setActiveMorph] = useState<MorphQuestion | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [libraryError, setLibraryError] = useState('')
+  const [generationError, setGenerationError] = useState('')
+  const [activeMorph, setActiveMorph] = useState<GeneratedMorph | null>(null)
 
   useEffect(() => {
     let active = true
@@ -28,7 +30,7 @@ export default function MorphDuellPage() {
       })
       .catch((reason) => {
         if (!active) return
-        setError(
+        setLibraryError(
           reason instanceof Error
             ? reason.message
             : 'Champion-Bibliothek konnte nicht geladen werden.',
@@ -57,9 +59,16 @@ export default function MorphDuellPage() {
     .map((id) => champions.find((champion) => champion.id === id))
     .filter((champion): champion is LeagueChampion => Boolean(champion))
 
+  const activeChampions = activeMorph
+    ? [activeMorph.firstChampion.id, activeMorph.secondChampion.id]
+        .map((id) => champions.find((champion) => champion.id === id))
+        .filter((champion): champion is LeagueChampion => Boolean(champion))
+    : []
+
   const toggleChampion = (championId: string) => {
+    if (generating) return
     setActiveMorph(null)
-    setError('')
+    setGenerationError('')
     setSelectedIds((current) => {
       if (current.includes(championId)) {
         return current.filter((id) => id !== championId)
@@ -68,18 +77,27 @@ export default function MorphDuellPage() {
     })
   }
 
-  const showMorph = () => {
-    if (selectedChampions.length !== 2) return
-    const morph = findMorphQuestion(selectedIds)
-    if (!morph) {
-      setActiveMorph(null)
-      setError(
-        'Für dieses Paar wurde noch kein KI-Fusionsbild erzeugt. Wähle Aatrox und Cassiopeia oder ergänze das Paar als neues Quiz-Asset.',
+  const createMorph = async () => {
+    if (selectedChampions.length !== 2 || generating) return
+
+    setGenerating(true)
+    setGenerationError('')
+    setActiveMorph(null)
+    try {
+      const morph = await generateMorph(
+        selectedChampions[0].id,
+        selectedChampions[1].id,
       )
-      return
+      setActiveMorph(morph)
+    } catch (reason) {
+      setGenerationError(
+        reason instanceof Error
+          ? reason.message
+          : 'Die KI-Fusion ist fehlgeschlagen.',
+      )
+    } finally {
+      setGenerating(false)
     }
-    setError('')
-    setActiveMorph(morph)
   }
 
   return (
@@ -92,8 +110,8 @@ export default function MorphDuellPage() {
           <span className="formats-eyebrow">Charakter-Morph</span>
           <h1>Champion Studio</h1>
           <p>
-            Wähle zwei League-of-Legends-Champions als Grundlage für eine
-            Morphduell-Frage.
+            Wähle zwei League-of-Legends-Champions. Das Fusionsbild wird erst
+            erzeugt, wenn du auf „Mit KI fusionieren“ klickst.
           </p>
         </div>
         <div className="data-dragon-status">
@@ -116,6 +134,7 @@ export default function MorphDuellPage() {
                     <small>{champion.title}</small>
                   </div>
                   <button
+                    disabled={generating}
                     onClick={() => toggleChampion(champion.id)}
                     type="button"
                     aria-label={`${champion.name} entfernen`}
@@ -136,31 +155,41 @@ export default function MorphDuellPage() {
         <div className={`fusion-readiness${selectedChampions.length === 2 ? ' ready' : ''}`}>
           <span>{selectedChampions.length} / 2</span>
           <strong>
-            {selectedChampions.length === 2
-              ? 'Paar für Fusion bereit'
-              : 'Zwei Champions auswählen'}
+            {generating
+              ? 'KI-Fusion läuft'
+              : selectedChampions.length === 2
+                ? 'Paar für Fusion bereit'
+                : 'Zwei Champions auswählen'}
           </strong>
           <small>
-            Zeige das vorbereitete KI-Fusionsbild als spielbare Quizkarte.
+            {generating
+              ? 'Die beiden Referenzbilder werden gerade zu einer neuen Figur verschmolzen. Das kann etwa eine Minute dauern.'
+              : 'Jeder Klick erzeugt eine neue Variante und speichert sie als Quizkarte.'}
           </small>
           <button
-            disabled={selectedChampions.length !== 2}
-            onClick={showMorph}
+            disabled={selectedChampions.length !== 2 || generating}
+            onClick={createMorph}
             type="button"
           >
-            KI-Morph anzeigen
+            {generating ? 'Fusion wird generiert...' : 'Mit KI fusionieren'}
           </button>
+          {generationError && (
+            <p className="fusion-error" role="alert">{generationError}</p>
+          )}
         </div>
       </section>
 
-      {activeMorph && selectedChampions.length === 2 && (
+      {activeMorph && activeChampions.length === 2 && (
         <section className="generated-morph">
           <div className="generated-morph-head">
             <div>
-              <span>Generierte Quizkarte</span>
+              <span>Neue KI-Quizkarte</span>
               <h2>Wer steckt im Morph?</h2>
             </div>
             <div>
+              <a href={activeMorph.imageUrl} download target="_blank" rel="noreferrer">
+                Bild öffnen
+              </a>
               <button onClick={() => setActiveMorph(null)} type="button">
                 Schließen
               </button>
@@ -168,15 +197,15 @@ export default function MorphDuellPage() {
           </div>
           <div className="generated-morph-image">
             <img
-              alt={`Morph aus ${selectedChampions[0].name} und ${selectedChampions[1].name}`}
-              src={activeMorph.image}
+              alt={`Morph aus ${activeChampions[0].name} und ${activeChampions[1].name}`}
+              src={activeMorph.imageUrl}
             />
             <span>Morphduell</span>
           </div>
           <details>
             <summary>Auflösung anzeigen</summary>
             <div>
-              {selectedChampions.map((champion) => (
+              {activeChampions.map((champion) => (
                 <article key={champion.id}>
                   <img alt={champion.name} src={champion.square} />
                   <strong>{champion.name}</strong>
@@ -187,7 +216,17 @@ export default function MorphDuellPage() {
           <details>
             <summary>Hinweise anzeigen</summary>
             <ol className="morph-hints">
-              {activeMorph.hints.map((hint) => <li key={hint}>{hint}</li>)}
+              <li>
+                Die Rollen der beiden Champions sind{' '}
+                {activeChampions
+                  .map((champion) => champion.roles.join('/'))
+                  .join(' und ')}.
+              </li>
+              <li>
+                Die Titel lauten „{activeChampions[0].title}“ und „
+                {activeChampions[1].title}“.
+              </li>
+              <li>Beide gesuchten Namen sind in der Auflösung sichtbar.</li>
             </ol>
           </details>
         </section>
@@ -202,6 +241,7 @@ export default function MorphDuellPage() {
           <label>
             <span>Champion suchen</span>
             <input
+              disabled={generating}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Name, Titel oder Rolle..."
               type="search"
@@ -212,8 +252,8 @@ export default function MorphDuellPage() {
 
         {loading ? (
           <div className="champion-library-message">Champions werden geladen...</div>
-        ) : error ? (
-          <div className="champion-library-message error">{error}</div>
+        ) : libraryError ? (
+          <div className="champion-library-message error">{libraryError}</div>
         ) : (
           <>
             <div className="champion-library-count">
@@ -225,6 +265,7 @@ export default function MorphDuellPage() {
                 return (
                   <button
                     className={selectedIndex >= 0 ? 'selected' : ''}
+                    disabled={generating}
                     key={champion.id}
                     onClick={() => toggleChampion(champion.id)}
                     type="button"
