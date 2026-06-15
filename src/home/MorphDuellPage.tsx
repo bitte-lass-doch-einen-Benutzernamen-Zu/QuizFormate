@@ -3,6 +3,7 @@ import {
   loadLeagueChampions,
   type LeagueChampion,
 } from '../formats/morph-duell/data/leagueChampions'
+import { createMorphPreview } from '../formats/morph-duell/lib/createMorphPreview'
 import './formats.css'
 
 export default function MorphDuellPage() {
@@ -12,6 +13,8 @@ export default function MorphDuellPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [morphImage, setMorphImage] = useState('')
+  const [generating, setGenerating] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -53,12 +56,32 @@ export default function MorphDuellPage() {
     .filter((champion): champion is LeagueChampion => Boolean(champion))
 
   const toggleChampion = (championId: string) => {
+    setMorphImage('')
     setSelectedIds((current) => {
       if (current.includes(championId)) {
         return current.filter((id) => id !== championId)
       }
       return current.length < 2 ? [...current, championId] : [current[1], championId]
     })
+  }
+
+  const generateMorph = async () => {
+    if (selectedChampions.length !== 2) return
+    setGenerating(true)
+    setError('')
+    try {
+      setMorphImage(
+        await createMorphPreview(selectedChampions[0], selectedChampions[1]),
+      )
+    } catch (reason) {
+      setError(
+        reason instanceof Error
+          ? reason.message
+          : 'Die Morph-Vorschau konnte nicht erstellt werden.',
+      )
+    } finally {
+      setGenerating(false)
+    }
   }
 
   return (
@@ -120,10 +143,55 @@ export default function MorphDuellPage() {
               : 'Zwei Champions auswählen'}
           </strong>
           <small>
-            Das finale Morph-Bild wird als eigenes Quiz-Asset gespeichert.
+            Erzeuge daraus eine spielbare Vorschau und speichere sie als PNG.
           </small>
+          <button
+            disabled={selectedChampions.length !== 2 || generating}
+            onClick={generateMorph}
+            type="button"
+          >
+            {generating ? 'Fusion läuft...' : 'Morph erzeugen'}
+          </button>
         </div>
       </section>
+
+      {morphImage && selectedChampions.length === 2 && (
+        <section className="generated-morph">
+          <div className="generated-morph-head">
+            <div>
+              <span>Generierte Quizkarte</span>
+              <h2>Wer steckt im Morph?</h2>
+            </div>
+            <div>
+              <button onClick={generateMorph} type="button">Neu erzeugen</button>
+              <a
+                download={`${selectedChampions[0].id}-${selectedChampions[1].id}-morph.png`}
+                href={morphImage}
+              >
+                PNG speichern
+              </a>
+            </div>
+          </div>
+          <div className="generated-morph-image">
+            <img
+              alt={`Morph aus ${selectedChampions[0].name} und ${selectedChampions[1].name}`}
+              src={morphImage}
+            />
+            <span>Morphduell</span>
+          </div>
+          <details>
+            <summary>Auflösung anzeigen</summary>
+            <div>
+              {selectedChampions.map((champion) => (
+                <article key={champion.id}>
+                  <img alt={champion.name} src={champion.square} />
+                  <strong>{champion.name}</strong>
+                </article>
+              ))}
+            </div>
+          </details>
+        </section>
+      )}
 
       <section className="champion-library">
         <div className="champion-library-toolbar">
