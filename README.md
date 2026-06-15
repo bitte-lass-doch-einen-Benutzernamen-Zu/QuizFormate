@@ -111,3 +111,8 @@ Die App unterstützt einen dauerhaften Admin-Login und temporäre Gastzugänge:
 
 Die Einrichtung ist unter [`supabase/README.md`](supabase/README.md)
 beschrieben.
+
+## Hinweis
+
+Dieses Projekt wurde mit Unterstützung von OpenAI Codex erstellt und
+weiterentwickelt.

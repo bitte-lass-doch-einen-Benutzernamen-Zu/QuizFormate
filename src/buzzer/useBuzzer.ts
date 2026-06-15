@@ -21,6 +21,7 @@ export type RoomParticipant = {
   joinedAt: string
   buzzerPosition: number | null
   hasText: boolean
+  points: number
 }
 
 export type BuzzerState = {
@@ -28,6 +29,8 @@ export type BuzzerState = {
   isOpen: boolean
   buzzerVisible: boolean
   textInputVisible: boolean
+  morphGuessMode: 'both' | 'one'
+  ownScore: number
   winnerUserId: string | null
   winnerName: string | null
   buzzedAt: string | null
@@ -42,6 +45,8 @@ type BuzzerPayload = {
   is_open: boolean
   buzzer_visible: boolean
   text_input_visible: boolean
+  morph_guess_mode?: 'both' | 'one'
+  own_score?: number
   winner_user_id: string | null
   winner_name: string | null
   buzzed_at: string | null
@@ -64,6 +69,7 @@ type BuzzerPayload = {
     joined_at: string
     buzzer_position: number | null
     has_text: boolean
+    points?: number
   }[]
 }
 
@@ -74,6 +80,8 @@ function parseBuzzerState(value: unknown): BuzzerState {
     isOpen: payload.is_open,
     buzzerVisible: payload.buzzer_visible,
     textInputVisible: payload.text_input_visible,
+    morphGuessMode: payload.morph_guess_mode ?? 'both',
+    ownScore: payload.own_score ?? 0,
     winnerUserId: payload.winner_user_id,
     winnerName: payload.winner_name,
     buzzedAt: payload.buzzed_at,
@@ -96,6 +104,7 @@ function parseBuzzerState(value: unknown): BuzzerState {
       joinedAt: participant.joined_at,
       buzzerPosition: participant.buzzer_position,
       hasText: participant.has_text,
+      points: participant.points ?? 0,
     })),
   }
 }
@@ -271,5 +280,16 @@ export function useBuzzer(roomId: string | undefined) {
       }),
     removeAllParticipants: () =>
       runRpc('remove_all_room_participants', { check_room_id: roomId }),
+    awardMorphPoints: (userId: string, points: -1 | 1 | 3) =>
+      runRpc('award_morph_points', {
+        check_room_id: roomId,
+        participant_user_id: userId,
+        point_delta: points,
+      }),
+    setMorphGuessMode: (mode: 'both' | 'one') =>
+      runRpc('set_morph_guess_mode', {
+        check_room_id: roomId,
+        guess_mode: mode,
+      }),
   }
 }

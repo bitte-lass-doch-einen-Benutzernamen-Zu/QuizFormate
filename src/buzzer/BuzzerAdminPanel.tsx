@@ -156,6 +156,7 @@ export default function BuzzerAdminPanel() {
                                 },
                               )}
                             </small>
+                            <b>{participant.points} Punkte</b>
                           </div>
                         </div>
                         <div className="participant-statuses">

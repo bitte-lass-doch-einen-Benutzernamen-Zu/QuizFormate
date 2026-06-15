@@ -78,6 +78,35 @@
   text-transform: uppercase;
 }
 
+.buzzer-player > b {
+  margin-left: 8px;
+  color: #00f5d4;
+}
+
+.morph-one-guess-notice {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  width: min(620px, 100%);
+  margin: 0 auto 18px;
+  padding: 18px;
+  border: 2px solid #ffb703;
+  color: #09050f;
+  background: #ffb703;
+  box-shadow: 0 0 38px rgba(255, 183, 3, .34);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.morph-one-guess-notice strong {
+  font: italic 900 clamp(1.8rem, 7vw, 3.5rem)/1 var(--font-display);
+}
+
+.morph-one-guess-notice span {
+  font-size: .7rem;
+  font-weight: 800;
+}
+
 .buzzer-player strong { color: #fff; }
 
 .buzzer-status {

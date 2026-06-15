@@ -119,7 +119,15 @@ export default function ViewerPage() {
       >
         <div className="buzzer-player">
           Du spielst als <strong>{guestAccess?.displayName}</strong>
+          <b>{buzzer.state?.ownScore ?? 0} Punkte</b>
         </div>
+
+        {buzzer.state?.morphGuessMode === 'one' && (
+          <div className="morph-one-guess-notice" role="status">
+            <strong>Nur noch 1 Champion!</strong>
+            <span>Ein richtiger Champion reicht jetzt und ist 1 Punkt wert.</span>
+          </div>
+        )}
 
         {!buzzer.loading &&
           !buzzer.state?.buzzerVisible &&
