@@ -13,6 +13,7 @@ import {
 } from '../lib/supabase'
 import {
   AuthContext,
+  type ActiveRoom,
   type AppRole,
   type GuestAccess,
 } from './authContext'
@@ -23,6 +24,7 @@ type CachedAccess = {
   userId: string
   role: AppRole
   guestAccess: GuestAccess | null
+  activeRoom?: ActiveRoom | null
 }
 
 function readCachedAccess(): CachedAccess | null {
@@ -77,6 +79,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [guestAccess, setGuestAccess] = useState<GuestAccess | null>(
     initialAccess?.guestAccess ?? null,
   )
+  const [activeRoom, setActiveRoom] = useState<ActiveRoom | null>(
+    initialAccess?.activeRoom ??
+      (initialAccess?.guestAccess
+        ? {
+            roomId: initialAccess.guestAccess.roomId,
+            roomTitle: initialAccess.guestAccess.roomTitle,
+            expiresAt: initialAccess.guestAccess.expiresAt,
+          }
+        : null),
+  )
   const authOperationRef = useRef(0)
 
   const loadAccess = useCallback(async (nextSession: Session | null) => {
@@ -85,6 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!nextSession) {
       setRole(null)
       setGuestAccess(null)
+      setActiveRoom(null)
       writeCachedAccess(null)
       setLoading(false)
       return
@@ -99,12 +112,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (profileError) throw profileError
     if (profile?.role === 'admin') {
+      const { data: room, error: roomError } = await client
+        .from('game_nights')
+        .select('id, title, expires_at')
+        .eq('owner_id', nextSession.user.id)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (roomError) throw roomError
+      const nextActiveRoom = room
+        ? {
+            roomId: room.id,
+            roomTitle: room.title,
+            expiresAt: room.expires_at,
+          }
+        : null
       setRole('admin')
       setGuestAccess(null)
+      setActiveRoom(nextActiveRoom)
       writeCachedAccess({
         userId: nextSession.user.id,
         role: 'admin',
         guestAccess: null,
+        activeRoom: nextActiveRoom,
       })
       setLoading(false)
       return
@@ -133,14 +165,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         expiresAt: room.expires_at,
       }
       setGuestAccess(nextGuestAccess)
+      setActiveRoom({
+        roomId: nextGuestAccess.roomId,
+        roomTitle: nextGuestAccess.roomTitle,
+        expiresAt: nextGuestAccess.expiresAt,
+      })
       writeCachedAccess({
         userId: nextSession.user.id,
         role: 'viewer',
         guestAccess: nextGuestAccess,
+        activeRoom: {
+          roomId: nextGuestAccess.roomId,
+          roomTitle: nextGuestAccess.roomTitle,
+          expiresAt: nextGuestAccess.expiresAt,
+        },
       })
     } else {
       setRole(null)
       setGuestAccess(null)
+      setActiveRoom(null)
       writeCachedAccess(null)
     }
     setLoading(false)
@@ -196,10 +239,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(data.session)
     setGuestAccess(null)
     setRole('admin')
+    const { data: room } = await client
+      .from('game_nights')
+      .select('id, title, expires_at')
+      .eq('owner_id', data.session.user.id)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    const nextActiveRoom = room
+      ? {
+          roomId: room.id,
+          roomTitle: room.title,
+          expiresAt: room.expires_at,
+        }
+      : null
+    setActiveRoom(nextActiveRoom)
     writeCachedAccess({
       userId: data.session.user.id,
       role: 'admin',
       guestAccess: null,
+      activeRoom: nextActiveRoom,
     })
     setLoading(false)
   }
@@ -225,6 +285,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setRole(null)
     setGuestAccess(null)
+    setActiveRoom(null)
     writeCachedAccess(null)
   }
 
@@ -256,10 +317,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(authData.session)
     setRole('viewer')
     setGuestAccess(access)
+    const nextActiveRoom = {
+      roomId: access.roomId,
+      roomTitle: access.roomTitle,
+      expiresAt: access.expiresAt,
+    }
+    setActiveRoom(nextActiveRoom)
     writeCachedAccess({
       userId: authData.user.id,
       role: 'viewer',
       guestAccess: access,
+      activeRoom: nextActiveRoom,
     })
   }
 
@@ -270,14 +338,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       valid_hours: validHours,
     })
     if (error) throw error
-    const result = data as { code?: unknown; expires_at?: unknown }
+    const result = data as {
+      code?: unknown
+      expires_at?: unknown
+      room_id?: unknown
+      room_title?: unknown
+    }
     if (
       typeof result.code !== 'string' ||
-      typeof result.expires_at !== 'string'
+      typeof result.expires_at !== 'string' ||
+      typeof result.room_id !== 'string'
     ) {
       throw new Error('Der Server hat keinen gültigen Invite-Code erstellt.')
     }
-    return { code: result.code, expiresAt: result.expires_at }
+    const nextActiveRoom = {
+      roomId: result.room_id,
+      roomTitle:
+        typeof result.room_title === 'string' ? result.room_title : title.trim(),
+      expiresAt: result.expires_at,
+    }
+    setActiveRoom(nextActiveRoom)
+    if (session) {
+      writeCachedAccess({
+        userId: session.user.id,
+        role: 'admin',
+        guestAccess: null,
+        activeRoom: nextActiveRoom,
+      })
+    }
+    return {
+      code: result.code,
+      expiresAt: result.expires_at,
+      roomId: result.room_id,
+    }
   }
 
   const signOut = async () => {
@@ -289,6 +382,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setRole(null)
     setGuestAccess(null)
+    setActiveRoom(null)
     writeCachedAccess(null)
   }
 
@@ -298,6 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     role,
     guestAccess,
+    activeRoom,
     signInAdmin,
     requestPasswordReset,
     updatePassword,

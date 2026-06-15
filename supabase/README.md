@@ -3,9 +3,13 @@
 1. Unter <https://supabase.com/dashboard> ein kostenloses Projekt erstellen.
 2. Unter **Authentication > Providers > Anonymous Sign-Ins** anonyme Logins
    aktivieren.
-3. Den Inhalt von
-   `supabase/migrations/202606140001_auth_and_invites.sql` im **SQL Editor**
-   ausführen.
+3. Alle Dateien unter `supabase/migrations` in aufsteigender Reihenfolge im
+   **SQL Editor** ausführen. Bei einer eingeloggten und verknüpften
+   Supabase-CLI genügt stattdessen:
+
+```bash
+npx supabase db push
+```
 4. Unter **Authentication > Users** einen Benutzer mit einer echten oder
    internen E-Mail und dem gewünschten Admin-Passwort erstellen. In der App
    meldet sich der Host trotzdem mit dem Benutzernamen `admin` an.
@@ -46,3 +50,10 @@ where is_anonymous is true
 
 Vor einer öffentlichen Freigabe sollte unter **Authentication > Bot and Abuse
 Protection** zusätzlich Cloudflare Turnstile aktiviert werden.
+
+## Live-Buzzer
+
+Die Migration `202606150001_live_buzzer.sql` legt den gemeinsamen
+Buzzer-Zustand, die Realtime-Freigabe und die serverseitigen Funktionen an.
+Die Gewinnerentscheidung geschieht atomar in PostgreSQL; Browser-Zeitstempel
+werden dafür nicht verwendet.

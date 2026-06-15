@@ -10,12 +10,19 @@ export type GuestAccess = {
   expiresAt: string
 }
 
+export type ActiveRoom = {
+  roomId: string
+  roomTitle: string
+  expiresAt: string
+}
+
 export type AuthContextValue = {
   configured: boolean
   loading: boolean
   session: Session | null
   role: AppRole | null
   guestAccess: GuestAccess | null
+  activeRoom: ActiveRoom | null
   signInAdmin: (password: string) => Promise<void>
   requestPasswordReset: () => Promise<void>
   updatePassword: (password: string) => Promise<void>
@@ -23,7 +30,7 @@ export type AuthContextValue = {
   createInvite: (
     title: string,
     validHours: number,
-  ) => Promise<{ code: string; expiresAt: string }>
+  ) => Promise<{ code: string; expiresAt: string; roomId: string }>
   signOut: () => Promise<void>
 }
 

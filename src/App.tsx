@@ -5,6 +5,7 @@ import { useAuth } from './auth/authContext'
 import { resolveRoute } from './app/routes'
 
 const AdminInvitePanel = lazy(() => import('./auth/AdminInvitePanel'))
+const BuzzerAdminPanel = lazy(() => import('./buzzer/BuzzerAdminPanel'))
 const ResetPasswordPage = lazy(() => import('./auth/ResetPasswordPage'))
 const ViewerPage = lazy(() => import('./auth/ViewerPage'))
 
@@ -31,6 +32,7 @@ function App() {
   return (
     <Suspense fallback={<AppLoader />}>
       <AdminInvitePanel />
+      <BuzzerAdminPanel />
       {resolveRoute(window.location.pathname)}
     </Suspense>
   )
