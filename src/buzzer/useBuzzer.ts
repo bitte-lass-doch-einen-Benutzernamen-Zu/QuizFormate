@@ -31,6 +31,20 @@ function parseBuzzerState(value: unknown): BuzzerState {
   }
 }
 
+function getBuzzerError(reason: unknown) {
+  if (
+    reason &&
+    typeof reason === 'object' &&
+    'code' in reason &&
+    reason.code === 'PGRST205'
+  ) {
+    return 'Der Live-Buzzer ist in Supabase noch nicht eingerichtet. Führe die Migration 202606150001_live_buzzer.sql aus.'
+  }
+  return reason instanceof Error
+    ? reason.message
+    : 'Buzzer konnte nicht geladen werden.'
+}
+
 export function useBuzzer(roomId: string | undefined) {
   const [state, setState] = useState<BuzzerState | null>(null)
   const [loading, setLoading] = useState(Boolean(roomId))
@@ -80,11 +94,7 @@ export function useBuzzer(roomId: string | undefined) {
       .catch((reason) => {
         if (!active) return
         setLoading(false)
-        setError(
-          reason instanceof Error
-            ? reason.message
-            : 'Buzzer konnte nicht geladen werden.',
-        )
+        setError(getBuzzerError(reason))
       })
 
     return () => {
@@ -127,7 +137,7 @@ export function useBuzzer(roomId: string | undefined) {
 
   return {
     state: currentState,
-    loading: Boolean(roomId) && (!currentState || loading),
+    loading: Boolean(roomId) && loading,
     busy,
     error,
     press: () => runAction('press_buzzer'),

@@ -240,6 +240,27 @@
   line-height: 1.55;
 }
 
+.buzzer-setup-error {
+  margin: 20px;
+  padding: 17px;
+  border: 1px solid rgba(255, 78, 122, .4);
+  color: #ffd6dc;
+  background: rgba(255, 72, 103, .08);
+}
+
+.buzzer-setup-error strong {
+  color: #ff7897;
+  font: 800 .82rem var(--font-display);
+  text-transform: uppercase;
+}
+
+.buzzer-setup-error p {
+  margin: 8px 0 0;
+  color: #c9bdcb;
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
 .buzzer-room-label {
   display: grid;
   gap: 4px;

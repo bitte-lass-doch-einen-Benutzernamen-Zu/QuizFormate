@@ -37,6 +37,11 @@ export default function BuzzerAdminPanel() {
             </div>
           ) : buzzer.loading ? (
             <div className="buzzer-empty">Buzzer wird verbunden...</div>
+          ) : buzzer.error && !buzzer.state ? (
+            <div className="buzzer-setup-error">
+              <strong>Supabase-Einrichtung fehlt</strong>
+              <p>{buzzer.error}</p>
+            </div>
           ) : (
             <>
               <div className="buzzer-room-label">
