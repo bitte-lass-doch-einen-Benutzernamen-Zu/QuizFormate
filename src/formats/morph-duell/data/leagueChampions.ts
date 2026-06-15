@@ -2,6 +2,7 @@ const DATA_DRAGON_ROOT = 'https://ddragon.leagueoflegends.com'
 
 type DataDragonChampion = {
   id: string
+  key: string
   name: string
   title: string
   image: {
@@ -16,6 +17,7 @@ type ChampionResponse = {
 
 export type LeagueChampion = {
   id: string
+  key: string
   name: string
   title: string
   roles: string[]
@@ -50,6 +52,7 @@ export async function loadLeagueChampions(): Promise<{
   const champions = Object.values(payload.data)
     .map((champion) => ({
       id: champion.id,
+      key: champion.key,
       name: champion.name,
       title: champion.title,
       roles: champion.tags,

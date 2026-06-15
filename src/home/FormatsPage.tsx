@@ -40,11 +40,13 @@ const formats: FormatCard[] = [
     symbol: '01',
   },
   {
-    title: 'Musikquiz',
-    kicker: 'Hören & Buzzern',
-    description: 'Songs, Intros und Sounds in schnellen Buzzer-Runden.',
+    title: 'Voice Quiz',
+    kicker: 'Hören & Erkennen',
+    description:
+      'League-Voicelines abspielen, Champions erraten und Punkte vergeben.',
     accent: '#4cc9f0',
-    badge: 'Geplant',
+    href: '/voicequiz',
+    badge: 'Spielbereit',
     symbol: '02',
   },
   {

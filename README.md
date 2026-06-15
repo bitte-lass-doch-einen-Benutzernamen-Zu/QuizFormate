@@ -14,6 +14,8 @@ Lokale Quizshow-Web-App für Freunde, gebaut mit React, Vite und TypeScript. Das
 - KI-generierte Fusionsfiguren als feste Morphduell-Quizassets
 - Gespeicherte Morph-Quizbibliothek mit frei wählbarer Kartenreihenfolge
 - Morphduell-Präsentationsmodus mit Hinweisen, Auflösung und Weiter-Navigation
+- League Voice Quiz mit automatischen Champion-Auswahl-Ansagen
+- Upload eigener Voiceline-Clips, Quizreihenfolge und Live-Punktevergabe
 - 2 Quizboards mit insgesamt 12 Kategorien und 48 Fragen
 - Board 1: `100`, `200`, `300` und `500` Punkte
 - Board 2: doppelte Punkte mit `200`, `400`, `600` und `1000`
@@ -111,6 +113,14 @@ Die App unterstützt einen dauerhaften Admin-Login und temporäre Gastzugänge:
 
 Die Einrichtung ist unter [`supabase/README.md`](supabase/README.md)
 beschrieben.
+
+## Voice-Quiz-Audio
+
+Riot Data Dragon bietet keine dokumentierte API für Champion-Voicelines.
+Das Voice Quiz kann die Champion-Auswahl-Ansagen aus dem inoffiziellen
+[CommunityDragon](https://www.communitydragon.org/)-Archiv übernehmen.
+Weitere oder vollständige Ingame-Voicelines können im Voice Studio als eigene
+Audiodateien hochgeladen werden.
 
 ## Hinweis
 
