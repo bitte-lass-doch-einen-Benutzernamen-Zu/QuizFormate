@@ -8,19 +8,31 @@ export type BuzzerEntry = {
   buzzedAt: string
 }
 
+export type RoomTextEntry = {
+  userId: string
+  displayName: string
+  content: string
+  submittedAt: string
+}
+
 export type BuzzerState = {
   roomId: string
   isOpen: boolean
+  buzzerVisible: boolean
+  textInputVisible: boolean
   winnerUserId: string | null
   winnerName: string | null
   buzzedAt: string | null
   updatedAt: string
   queue: BuzzerEntry[]
+  textEntries: RoomTextEntry[]
 }
 
 type BuzzerPayload = {
   room_id: string
   is_open: boolean
+  buzzer_visible: boolean
+  text_input_visible: boolean
   winner_user_id: string | null
   winner_name: string | null
   buzzed_at: string | null
@@ -31,6 +43,12 @@ type BuzzerPayload = {
     position: number
     buzzed_at: string
   }[]
+  text_entries?: {
+    user_id: string
+    display_name: string
+    content: string
+    submitted_at: string
+  }[]
 }
 
 function parseBuzzerState(value: unknown): BuzzerState {
@@ -38,6 +56,8 @@ function parseBuzzerState(value: unknown): BuzzerState {
   return {
     roomId: payload.room_id,
     isOpen: payload.is_open,
+    buzzerVisible: payload.buzzer_visible,
+    textInputVisible: payload.text_input_visible,
     winnerUserId: payload.winner_user_id,
     winnerName: payload.winner_name,
     buzzedAt: payload.buzzed_at,
@@ -47,6 +67,12 @@ function parseBuzzerState(value: unknown): BuzzerState {
       displayName: entry.display_name,
       position: entry.position,
       buzzedAt: entry.buzzed_at,
+    })),
+    textEntries: (payload.text_entries ?? []).map((entry) => ({
+      userId: entry.user_id,
+      displayName: entry.display_name,
+      content: entry.content,
+      submittedAt: entry.submitted_at,
     })),
   }
 }
@@ -159,6 +185,31 @@ export function useBuzzer(roomId: string | undefined) {
     [busy, roomId],
   )
 
+  const runRpc = useCallback(
+    async (functionName: string, args: Record<string, unknown>) => {
+      if (!roomId || busy) return null
+      setBusy(true)
+      setError('')
+      try {
+        const client = await getSupabaseClient()
+        const { data, error: actionError } = await client.rpc(functionName, args)
+        if (actionError) throw actionError
+        setState(parseBuzzerState(data))
+        return data
+      } catch (reason) {
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Raum-Aktion fehlgeschlagen.',
+        )
+        return null
+      } finally {
+        setBusy(false)
+      }
+    },
+    [busy, roomId],
+  )
+
   const currentState = state?.roomId === roomId ? state : null
 
   return {
@@ -170,5 +221,18 @@ export function useBuzzer(roomId: string | undefined) {
     open: () => runAction('control_buzzer', 'open'),
     lock: () => runAction('control_buzzer', 'lock'),
     reset: () => runAction('control_buzzer', 'reset'),
+    setFeature: (feature: 'buzzer' | 'text', enabled: boolean) =>
+      runRpc('control_room_feature', {
+        check_room_id: roomId,
+        feature_name: feature,
+        enabled,
+      }),
+    submitText: (content: string) =>
+      runRpc('submit_room_text', {
+        check_room_id: roomId,
+        submitted_text: content,
+      }),
+    clearTexts: () =>
+      runRpc('clear_room_texts', { check_room_id: roomId }),
   }
 }
