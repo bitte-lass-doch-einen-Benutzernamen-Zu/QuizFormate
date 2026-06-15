@@ -593,6 +593,31 @@
   object-fit: cover;
 }
 
+.morph-hints {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding: 0 12px 12px;
+  list-style: none;
+  counter-reset: morph-hint;
+}
+
+.morph-hints li {
+  padding: 11px 12px;
+  border: 1px solid rgba(167, 139, 250, .14);
+  color: #cfc8d8;
+  background: rgba(255, 255, 255, .025);
+  counter-increment: morph-hint;
+}
+
+.morph-hints li::before {
+  margin-right: 9px;
+  color: #ff4ecd;
+  content: counter(morph-hint, decimal-leading-zero);
+  font-size: .62rem;
+  font-weight: 800;
+}
+
 .champion-library {
   max-width: 1450px;
   margin: 0 auto;

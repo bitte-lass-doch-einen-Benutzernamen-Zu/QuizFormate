@@ -3,7 +3,10 @@ import {
   loadLeagueChampions,
   type LeagueChampion,
 } from '../formats/morph-duell/data/leagueChampions'
-import { createMorphPreview } from '../formats/morph-duell/lib/createMorphPreview'
+import {
+  findMorphQuestion,
+  type MorphQuestion,
+} from '../formats/morph-duell/data/morphQuestions'
 import './formats.css'
 
 export default function MorphDuellPage() {
@@ -13,8 +16,7 @@ export default function MorphDuellPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [morphImage, setMorphImage] = useState('')
-  const [generating, setGenerating] = useState(false)
+  const [activeMorph, setActiveMorph] = useState<MorphQuestion | null>(null)
 
   useEffect(() => {
     let active = true
@@ -56,7 +58,8 @@ export default function MorphDuellPage() {
     .filter((champion): champion is LeagueChampion => Boolean(champion))
 
   const toggleChampion = (championId: string) => {
-    setMorphImage('')
+    setActiveMorph(null)
+    setError('')
     setSelectedIds((current) => {
       if (current.includes(championId)) {
         return current.filter((id) => id !== championId)
@@ -65,23 +68,18 @@ export default function MorphDuellPage() {
     })
   }
 
-  const generateMorph = async () => {
+  const showMorph = () => {
     if (selectedChampions.length !== 2) return
-    setGenerating(true)
-    setError('')
-    try {
-      setMorphImage(
-        await createMorphPreview(selectedChampions[0], selectedChampions[1]),
-      )
-    } catch (reason) {
+    const morph = findMorphQuestion(selectedIds)
+    if (!morph) {
+      setActiveMorph(null)
       setError(
-        reason instanceof Error
-          ? reason.message
-          : 'Die Morph-Vorschau konnte nicht erstellt werden.',
+        'Für dieses Paar wurde noch kein KI-Fusionsbild erzeugt. Wähle Aatrox und Cassiopeia oder ergänze das Paar als neues Quiz-Asset.',
       )
-    } finally {
-      setGenerating(false)
+      return
     }
+    setError('')
+    setActiveMorph(morph)
   }
 
   return (
@@ -143,19 +141,19 @@ export default function MorphDuellPage() {
               : 'Zwei Champions auswählen'}
           </strong>
           <small>
-            Erzeuge daraus eine spielbare Vorschau und speichere sie als PNG.
+            Zeige das vorbereitete KI-Fusionsbild als spielbare Quizkarte.
           </small>
           <button
-            disabled={selectedChampions.length !== 2 || generating}
-            onClick={generateMorph}
+            disabled={selectedChampions.length !== 2}
+            onClick={showMorph}
             type="button"
           >
-            {generating ? 'Fusion läuft...' : 'Morph erzeugen'}
+            KI-Morph anzeigen
           </button>
         </div>
       </section>
 
-      {morphImage && selectedChampions.length === 2 && (
+      {activeMorph && selectedChampions.length === 2 && (
         <section className="generated-morph">
           <div className="generated-morph-head">
             <div>
@@ -163,19 +161,15 @@ export default function MorphDuellPage() {
               <h2>Wer steckt im Morph?</h2>
             </div>
             <div>
-              <button onClick={generateMorph} type="button">Neu erzeugen</button>
-              <a
-                download={`${selectedChampions[0].id}-${selectedChampions[1].id}-morph.png`}
-                href={morphImage}
-              >
-                PNG speichern
-              </a>
+              <button onClick={() => setActiveMorph(null)} type="button">
+                Schließen
+              </button>
             </div>
           </div>
           <div className="generated-morph-image">
             <img
               alt={`Morph aus ${selectedChampions[0].name} und ${selectedChampions[1].name}`}
-              src={morphImage}
+              src={activeMorph.image}
             />
             <span>Morphduell</span>
           </div>
@@ -189,6 +183,12 @@ export default function MorphDuellPage() {
                 </article>
               ))}
             </div>
+          </details>
+          <details>
+            <summary>Hinweise anzeigen</summary>
+            <ol className="morph-hints">
+              {activeMorph.hints.map((hint) => <li key={hint}>{hint}</li>)}
+            </ol>
           </details>
         </section>
       )}

@@ -11,7 +11,7 @@ Lokale Quizshow-Web-App für Freunde, gebaut mit React, Vite und TypeScript. Das
 - Teilnehmerverwaltung mit Entfernen und individuellem Interaktions-Reset
 - Gemeinsamer aktiver Raum mit persönlichen Einmal-Invite-Codes
 - Dynamische League-Champion-Bibliothek über Riot Data Dragon
-- Erzeugbare Morph-Vorschau aus zwei ausgewählten Champions mit PNG-Export
+- KI-generierte Fusionsfiguren als feste Morphduell-Quizassets
 - 2 Quizboards mit insgesamt 12 Kategorien und 48 Fragen
 - Board 1: `100`, `200`, `300` und `500` Punkte
 - Board 2: doppelte Punkte mit `200`, `400`, `600` und `1000`
