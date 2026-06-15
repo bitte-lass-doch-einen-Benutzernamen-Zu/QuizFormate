@@ -4,6 +4,7 @@ import {
   hasMorphOpenAIKey,
   setMorphOpenAIKey,
   type GeneratedMorph,
+  type MorphDifficulty,
 } from '../formats/morph-duell/api/generateMorph'
 import {
   loadLeagueChampions,
@@ -11,11 +12,34 @@ import {
 } from '../formats/morph-duell/data/leagueChampions'
 import './formats.css'
 
+const difficulties: Array<{
+  value: MorphDifficulty
+  label: string
+  description: string
+}> = [
+  {
+    value: 'easy',
+    label: 'Leicht',
+    description: 'Ikonische Farben und Merkmale bleiben gut erkennbar.',
+  },
+  {
+    value: 'medium',
+    label: 'Mittel',
+    description: 'Gesicht, Silhouette und Outfit werden stärker verändert.',
+  },
+  {
+    value: 'hard',
+    label: 'Schwer',
+    description: 'Nur subtile Merkmale bleiben in einem neuen Design verborgen.',
+  },
+]
+
 export default function MorphDuellPage() {
   const [champions, setChampions] = useState<LeagueChampion[]>([])
   const [version, setVersion] = useState('')
   const [query, setQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [difficulty, setDifficulty] = useState<MorphDifficulty>('medium')
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [providerConfigured, setProviderConfigured] = useState<boolean | null>(null)
@@ -107,6 +131,7 @@ export default function MorphDuellPage() {
       const morph = await generateMorph(
         selectedChampions[0].id,
         selectedChampions[1].id,
+        difficulty,
       )
       setActiveMorph(morph)
     } catch (reason) {
@@ -245,6 +270,27 @@ export default function MorphDuellPage() {
               ? 'Die beiden Referenzbilder werden gerade zu einer neuen Figur verschmolzen. Das kann etwa eine Minute dauern.'
               : 'Jeder Klick erzeugt eine neue Variante und speichert sie als Quizkarte.'}
           </small>
+          <fieldset className="morph-difficulty" disabled={generating}>
+            <legend>Schwierigkeit</legend>
+            {difficulties.map((option) => (
+              <label
+                className={difficulty === option.value ? 'selected' : ''}
+                key={option.value}
+              >
+                <input
+                  checked={difficulty === option.value}
+                  name="morph-difficulty"
+                  onChange={() => setDifficulty(option.value)}
+                  type="radio"
+                  value={option.value}
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>{option.description}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
           <button
             disabled={
               selectedChampions.length !== 2 ||
@@ -270,7 +316,12 @@ export default function MorphDuellPage() {
         <section className="generated-morph">
           <div className="generated-morph-head">
             <div>
-              <span>Neue KI-Quizkarte</span>
+              <span>
+                Neue KI-Quizkarte ·{' '}
+                {difficulties.find(
+                  (option) => option.value === activeMorph.difficulty,
+                )?.label}
+              </span>
               <h2>Wer steckt im Morph?</h2>
             </div>
             <div>

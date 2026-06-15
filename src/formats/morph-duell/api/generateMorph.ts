@@ -1,7 +1,10 @@
 import { getSupabaseClient } from '../../../lib/supabase'
 
+export type MorphDifficulty = 'easy' | 'medium' | 'hard'
+
 export type GeneratedMorph = {
   imageUrl: string
+  difficulty: MorphDifficulty
   firstChampion: {
     id: string
     name: string
@@ -53,6 +56,7 @@ async function readFunctionError(error: unknown) {
 export async function generateMorph(
   firstChampionId: string,
   secondChampionId: string,
+  difficulty: MorphDifficulty,
 ) {
   const client = await getSupabaseClient()
   const { data, error } = await client.functions.invoke<GeneratedMorph>(
@@ -61,6 +65,7 @@ export async function generateMorph(
       body: {
         firstChampionId,
         secondChampionId,
+        difficulty,
       },
     },
   )

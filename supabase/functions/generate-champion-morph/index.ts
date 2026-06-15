@@ -29,6 +29,27 @@ type OpenAIImageResponse = {
   }
 }
 
+type MorphDifficulty = 'easy' | 'medium' | 'hard'
+
+const difficultyPrompts: Record<MorphDifficulty, string[]> = {
+  easy: [
+    'Keep several iconic and recognizable visual traits from both source characters.',
+    'Preserve their signature color families, characteristic facial details, and at least one recognizable armor or magical motif from each reference.',
+    'The two source identities should be discoverable quickly by experienced players.',
+  ],
+  medium: [
+    'Transform the face, hairstyle, silhouette, and costume into a genuinely new design instead of copying either source directly.',
+    'Use recognizable traits from both references only as blended details; avoid reproducing either original face, exact outfit, or complete weapon.',
+    'Change some signature colors and reinterpret iconic motifs so identification requires careful observation.',
+  ],
+  hard: [
+    'Make the source identities deliberately subtle and difficult to recognize while still incorporating balanced visual DNA from both references.',
+    'Do not reproduce either original face, hairstyle, exact outfit, full weapon, signature pose, or obvious color palette.',
+    'Hide secondary traits from each reference inside a new face, new silhouette, unfamiliar costume, altered materials, and a substantially different color scheme.',
+    'Avoid the single most iconic feature of each character. The answer should require expert knowledge and close inspection.',
+  ],
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -147,14 +168,17 @@ Deno.serve(async (request) => {
     const payload = await request.json() as {
       firstChampionId?: unknown
       secondChampionId?: unknown
+      difficulty?: unknown
     }
+    const difficulty = payload.difficulty
     if (
       typeof payload.firstChampionId !== 'string' ||
       typeof payload.secondChampionId !== 'string' ||
-      payload.firstChampionId === payload.secondChampionId
+      payload.firstChampionId === payload.secondChampionId ||
+      (difficulty !== 'easy' && difficulty !== 'medium' && difficulty !== 'hard')
     ) {
       return jsonResponse(
-        { error: 'Bitte wähle zwei verschiedene Champions aus.' },
+        { error: 'Bitte wähle zwei Champions und eine gültige Schwierigkeit aus.' },
         400,
       )
     }
@@ -199,6 +223,7 @@ Deno.serve(async (request) => {
         `Create one coherent fantasy character that visually fuses ${firstChampion.name} and ${secondChampion.name} from the two reference images.`,
         'The result must look like a single new person or creature, not two characters standing together.',
         'Blend the most recognizable facial features, silhouette, armor, colors, materials, and magical traits from both references evenly.',
+        ...difficultyPrompts[difficulty],
         'Cinematic League-inspired splash-art composition, centered full upper body, dramatic neutral fantasy background.',
         'Do not add text, logos, labels, borders, split screens, collages, or duplicated bodies.',
       ].join(' '),
@@ -255,6 +280,7 @@ Deno.serve(async (request) => {
         first_champion_name: firstChampion.name,
         second_champion_id: secondChampion.id,
         second_champion_name: secondChampion.name,
+        difficulty,
         image_path: imagePath,
       })
 
@@ -273,6 +299,7 @@ Deno.serve(async (request) => {
 
     return jsonResponse({
       imageUrl: publicImage.publicUrl,
+      difficulty,
       firstChampion: {
         id: firstChampion.id,
         name: firstChampion.name,

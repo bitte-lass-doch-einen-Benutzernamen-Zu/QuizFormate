@@ -533,6 +533,61 @@
 
 .fusion-readiness > small { color: #716879; line-height: 1.5; }
 
+.morph-difficulty {
+  display: grid;
+  gap: 6px;
+  margin: 9px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.morph-difficulty legend {
+  margin-bottom: 5px;
+  color: #8f879f;
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.morph-difficulty label {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  cursor: pointer;
+  padding: 8px;
+  border: 1px solid rgba(167, 139, 250, .14);
+  background: rgba(255, 255, 255, .018);
+}
+
+.morph-difficulty label.selected {
+  border-color: rgba(0, 245, 212, .42);
+  background: rgba(0, 245, 212, .055);
+}
+
+.morph-difficulty input {
+  margin: 3px 0 0;
+  accent-color: #00f5d4;
+}
+
+.morph-difficulty label > span {
+  display: grid;
+  gap: 2px;
+}
+
+.morph-difficulty strong {
+  color: #d8d2df;
+  font: 800 .68rem var(--font-display);
+  text-transform: uppercase;
+}
+
+.morph-difficulty small {
+  color: #716879;
+  font-size: .6rem;
+  line-height: 1.35;
+}
+
 .fusion-readiness > button {
   cursor: pointer;
   margin-top: 8px;
