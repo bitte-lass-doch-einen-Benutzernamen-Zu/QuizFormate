@@ -215,8 +215,9 @@ Deno.serve(async (request) => {
     form.append('image[]', firstImage, `${firstChampion.id}.jpg`)
     form.append('image[]', secondImage, `${secondChampion.id}.jpg`)
     form.append('quality', 'low')
-    form.append('size', '1024x1024')
-    form.append('output_format', 'webp')
+    form.append('size', '816x816')
+    form.append('output_format', 'jpeg')
+    form.append('output_compression', '65')
     form.append(
       'prompt',
       [
@@ -259,12 +260,12 @@ Deno.serve(async (request) => {
       .join('-')
       .toLowerCase()
     const imagePath =
-      `${userData.user.id}/${pairName}-${crypto.randomUUID()}.webp`
+      `${userData.user.id}/${pairName}-${crypto.randomUUID()}.jpg`
     const imageBytes = decodeBase64(encodedImage)
     const { error: uploadError } = await supabase.storage
       .from(MORPH_BUCKET)
       .upload(imagePath, imageBytes, {
-        contentType: 'image/webp',
+        contentType: 'image/jpeg',
         upsert: false,
       })
 

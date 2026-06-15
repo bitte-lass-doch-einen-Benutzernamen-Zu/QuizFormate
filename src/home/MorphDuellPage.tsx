@@ -49,6 +49,7 @@ export default function MorphDuellPage() {
   const [libraryError, setLibraryError] = useState('')
   const [generationError, setGenerationError] = useState('')
   const [activeMorph, setActiveMorph] = useState<GeneratedMorph | null>(null)
+  const [revealedHints, setRevealedHints] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -127,6 +128,7 @@ export default function MorphDuellPage() {
     setGenerating(true)
     setGenerationError('')
     setActiveMorph(null)
+    setRevealedHints(0)
     try {
       const morph = await generateMorph(
         selectedChampions[0].id,
@@ -164,6 +166,16 @@ export default function MorphDuellPage() {
       setSavingApiKey(false)
     }
   }
+
+  const activeHints = activeChampions.length === 2
+    ? [
+        `Die Rollen der beiden Champions sind ${activeChampions
+          .map((champion) => champion.roles.join('/'))
+          .join(' und ')}.`,
+        `Die Titel lauten „${activeChampions[0].title}“ und „${activeChampions[1].title}“.`,
+        `Die Anfangsbuchstaben der gesuchten Champions sind ${activeChampions[0].name[0]} und ${activeChampions[1].name[0]}.`,
+      ]
+    : []
 
   return (
     <main className="morph-library-page">
@@ -333,40 +345,52 @@ export default function MorphDuellPage() {
               </button>
             </div>
           </div>
-          <div className="generated-morph-image">
-            <img
-              alt={`Morph aus ${activeChampions[0].name} und ${activeChampions[1].name}`}
-              src={activeMorph.imageUrl}
-            />
-            <span>Morphduell</span>
-          </div>
-          <details>
-            <summary>Auflösung anzeigen</summary>
-            <div>
-              {activeChampions.map((champion) => (
-                <article key={champion.id}>
-                  <img alt={champion.name} src={champion.square} />
-                  <strong>{champion.name}</strong>
-                </article>
-              ))}
+          <div className="generated-morph-stage">
+            <div className="generated-morph-image">
+              <img
+                alt={`Morph aus ${activeChampions[0].name} und ${activeChampions[1].name}`}
+                src={activeMorph.imageUrl}
+              />
+              <span>Morphduell</span>
             </div>
-          </details>
-          <details>
-            <summary>Hinweise anzeigen</summary>
-            <ol className="morph-hints">
-              <li>
-                Die Rollen der beiden Champions sind{' '}
-                {activeChampions
-                  .map((champion) => champion.roles.join('/'))
-                  .join(' und ')}.
-              </li>
-              <li>
-                Die Titel lauten „{activeChampions[0].title}“ und „
-                {activeChampions[1].title}“.
-              </li>
-              <li>Beide gesuchten Namen sind in der Auflösung sichtbar.</li>
-            </ol>
-          </details>
+            <aside className="morph-game-tools">
+              <div className="morph-game-tools-head">
+                <span>Spielleitung</span>
+                <h3>Hinweise</h3>
+                <small>{revealedHints} / {activeHints.length} aufgedeckt</small>
+              </div>
+              <ol className="morph-hints">
+                {activeHints.slice(0, revealedHints).map((hint) => (
+                  <li key={hint}>{hint}</li>
+                ))}
+              </ol>
+              {revealedHints === 0 && (
+                <p className="morph-hints-empty">
+                  Decke nur dann einen Hinweis auf, wenn das Bild zu schwer ist.
+                </p>
+              )}
+              <button
+                disabled={revealedHints >= activeHints.length}
+                onClick={() => setRevealedHints((current) => current + 1)}
+                type="button"
+              >
+                {revealedHints < activeHints.length
+                  ? `Hinweis ${revealedHints + 1} aufdecken`
+                  : 'Alle Hinweise aufgedeckt'}
+              </button>
+              <details className="morph-solution">
+                <summary>Auflösung anzeigen</summary>
+                <div>
+                  {activeChampions.map((champion) => (
+                    <article key={champion.id}>
+                      <img alt={champion.name} src={champion.square} />
+                      <strong>{champion.name}</strong>
+                    </article>
+                  ))}
+                </div>
+              </details>
+            </aside>
+          </div>
         </section>
       )}
 
