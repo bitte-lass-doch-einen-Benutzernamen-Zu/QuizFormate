@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { getSupabaseClient } from '../lib/supabase'
 
+export type BuzzerEntry = {
+  userId: string
+  displayName: string
+  position: number
+  buzzedAt: string
+}
+
 export type BuzzerState = {
   roomId: string
   isOpen: boolean
@@ -8,26 +15,39 @@ export type BuzzerState = {
   winnerName: string | null
   buzzedAt: string | null
   updatedAt: string
+  queue: BuzzerEntry[]
 }
 
-type BuzzerRow = {
+type BuzzerPayload = {
   room_id: string
   is_open: boolean
   winner_user_id: string | null
   winner_name: string | null
   buzzed_at: string | null
   updated_at: string
+  queue?: {
+    user_id: string
+    display_name: string
+    position: number
+    buzzed_at: string
+  }[]
 }
 
 function parseBuzzerState(value: unknown): BuzzerState {
-  const row = value as BuzzerRow
+  const payload = value as BuzzerPayload
   return {
-    roomId: row.room_id,
-    isOpen: row.is_open,
-    winnerUserId: row.winner_user_id,
-    winnerName: row.winner_name,
-    buzzedAt: row.buzzed_at,
-    updatedAt: row.updated_at,
+    roomId: payload.room_id,
+    isOpen: payload.is_open,
+    winnerUserId: payload.winner_user_id,
+    winnerName: payload.winner_name,
+    buzzedAt: payload.buzzed_at,
+    updatedAt: payload.updated_at,
+    queue: (payload.queue ?? []).map((entry) => ({
+      userId: entry.user_id,
+      displayName: entry.display_name,
+      position: entry.position,
+      buzzedAt: entry.buzzed_at,
+    })),
   }
 }
 
@@ -38,7 +58,7 @@ function getBuzzerError(reason: unknown) {
     'code' in reason &&
     reason.code === 'PGRST205'
   ) {
-    return 'Der Live-Buzzer ist in Supabase noch nicht eingerichtet. Führe die Migration 202606150001_live_buzzer.sql aus.'
+    return 'Der Live-Buzzer ist in Supabase noch nicht eingerichtet.'
   }
   return reason instanceof Error
     ? reason.message
@@ -62,15 +82,18 @@ export function useBuzzer(roomId: string | undefined) {
         if (!active) return
         setLoading(true)
         setError('')
-        const { data, error: loadError } = await client
-          .from('buzzer_states')
-          .select('*')
-          .eq('room_id', roomId)
-          .single()
 
-        if (loadError) throw loadError
+        const loadSnapshot = async () => {
+          const { data, error: loadError } = await client.rpc(
+            'buzzer_snapshot',
+            { check_room_id: roomId },
+          )
+          if (loadError) throw loadError
+          if (active) setState(parseBuzzerState(data))
+        }
+
+        await loadSnapshot()
         if (!active) return
-        setState(parseBuzzerState(data))
         setLoading(false)
 
         const channel = client
@@ -83,7 +106,11 @@ export function useBuzzer(roomId: string | undefined) {
               table: 'buzzer_states',
               filter: `room_id=eq.${roomId}`,
             },
-            (payload) => setState(parseBuzzerState(payload.new)),
+            () => {
+              void loadSnapshot().catch((reason) => {
+                if (active) setError(getBuzzerError(reason))
+              })
+            },
           )
           .subscribe()
 
@@ -116,9 +143,8 @@ export function useBuzzer(roomId: string | undefined) {
             : { check_room_id: roomId, buzzer_action: action }
         const { data, error: actionError } = await client.rpc(functionName, args)
         if (actionError) throw actionError
-        const nextState = parseBuzzerState(data)
-        setState(nextState)
-        return data as { claimed?: boolean }
+        setState(parseBuzzerState(data))
+        return data as { position?: number }
       } catch (reason) {
         setError(
           reason instanceof Error

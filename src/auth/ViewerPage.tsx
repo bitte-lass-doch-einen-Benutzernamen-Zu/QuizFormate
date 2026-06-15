@@ -1,22 +1,24 @@
-import { useAuth } from './authContext'
 import { useBuzzer } from '../buzzer/useBuzzer'
+import { useAuth } from './authContext'
 import '../buzzer/buzzer.css'
 
 export default function ViewerPage() {
   const { guestAccess, session, signOut } = useAuth()
   const buzzer = useBuzzer(guestAccess?.roomId)
-  const isWinner =
-    Boolean(session?.user.id) &&
-    buzzer.state?.winnerUserId === session?.user.id
-  const hasWinner = Boolean(buzzer.state?.winnerUserId)
-  const canPress = Boolean(buzzer.state?.isOpen && !hasWinner && !buzzer.busy)
+  const ownEntry = buzzer.state?.queue.find(
+    (entry) => entry.userId === session?.user.id,
+  )
+  const isWinner = ownEntry?.position === 1
+  const canPress = Boolean(
+    buzzer.state?.isOpen && !ownEntry && !buzzer.busy,
+  )
 
   const status = buzzer.loading
     ? 'Verbindung wird hergestellt'
-    : buzzer.state?.winnerName
-      ? isWinner
+    : ownEntry
+      ? ownEntry.position === 1
         ? 'Du warst zuerst'
-        : `${buzzer.state.winnerName} war zuerst`
+        : `Du bist auf Platz ${ownEntry.position}`
       : buzzer.state?.isOpen
         ? 'Der Buzzer ist frei'
         : 'Warte auf die Spielleitung'
@@ -44,19 +46,43 @@ export default function ViewerPage() {
           onClick={buzzer.press}
           type="button"
         >
-          <span>{isWinner ? 'ERSTER!' : hasWinner ? 'ZU SPÄT' : 'BUZZER'}</span>
+          <span>
+            {ownEntry
+              ? ownEntry.position === 1
+                ? 'ERSTER!'
+                : `PLATZ ${ownEntry.position}`
+              : 'BUZZER'}
+          </span>
           <small>
             {canPress
               ? 'Jetzt drücken'
-              : buzzer.state?.isOpen
-                ? 'Runde entschieden'
+              : ownEntry
+                ? 'Antwort registriert'
                 : 'Noch gesperrt'}
           </small>
         </button>
 
+        {Boolean(buzzer.state?.queue.length) && (
+          <div className="viewer-buzzer-queue">
+            <span>Aktuelle Reihenfolge</span>
+            <ol>
+              {buzzer.state?.queue.map((entry) => (
+                <li
+                  className={entry.userId === session?.user.id ? 'you' : ''}
+                  key={entry.userId}
+                >
+                  <b>{entry.position}</b>
+                  <strong>{entry.displayName}</strong>
+                  {entry.userId === session?.user.id && <small>Du</small>}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         {buzzer.error && <p className="buzzer-error">{buzzer.error}</p>}
         <p className="buzzer-hint">
-          Der Server entscheidet atomar, wer tatsächlich zuerst war.
+          Der Server vergibt alle Plätze atomar in der echten Reihenfolge.
         </p>
       </section>
     </main>

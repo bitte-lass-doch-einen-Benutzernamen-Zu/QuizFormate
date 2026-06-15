@@ -43,6 +43,7 @@ export default function QuizBoard({ quiz }: QuizBoardProps) {
         </div>
         <div className="board-tools">
           <TimerPanel />
+          <a href="/">Formate</a>
           <a href="/answers" target="_blank" rel="noreferrer">
             Lösungen öffnen
           </a>

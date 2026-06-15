@@ -4,6 +4,8 @@ Lokale Quizshow-Web-App für Freunde, gebaut mit React, Vite und TypeScript. Das
 
 ## Funktionen
 
+- Format-Startseite mit Quizduell, Morphduell und geplanten Formaten
+- Atomarer Live-Buzzer mit vollständiger Reihenfolge aller Teilnehmer
 - 2 Quizboards mit insgesamt 12 Kategorien und 48 Fragen
 - Board 1: `100`, `200`, `300` und `500` Punkte
 - Board 2: doppelte Punkte mit `200`, `400`, `600` und `1000`

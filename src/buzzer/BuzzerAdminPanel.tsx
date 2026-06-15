@@ -49,20 +49,35 @@ export default function BuzzerAdminPanel() {
                 <strong>{activeRoom.roomTitle}</strong>
               </div>
 
-              <div
-                className={`buzzer-result${
-                  buzzer.state?.winnerName ? ' has-winner' : ''
-                }`}
-              >
-                <span>
-                  {buzzer.state?.winnerName
-                    ? 'Als Erstes gedrückt'
-                    : buzzer.state?.isOpen
-                      ? 'Buzzer ist freigegeben'
-                      : 'Buzzer ist gesperrt'}
-                </span>
-                <strong>{buzzer.state?.winnerName ?? 'Noch niemand'}</strong>
+              <div className="buzzer-queue-head">
+                <div>
+                  <span>Reihenfolge</span>
+                  <strong>
+                    {buzzer.state?.isOpen ? 'Runde läuft' : 'Buzzer gesperrt'}
+                  </strong>
+                </div>
+                <b>{buzzer.state?.queue.length ?? 0}</b>
               </div>
+
+              <ol className="buzzer-queue">
+                {buzzer.state?.queue.length ? (
+                  buzzer.state.queue.map((entry) => (
+                    <li key={entry.userId}>
+                      <b>{entry.position}</b>
+                      <strong>{entry.displayName}</strong>
+                      <time>
+                        {new Date(entry.buzzedAt).toLocaleTimeString('de-AT', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </time>
+                    </li>
+                  ))
+                ) : (
+                  <li className="empty">Noch niemand hat gedrückt.</li>
+                )}
+              </ol>
 
               <div className="buzzer-admin-actions">
                 <button
