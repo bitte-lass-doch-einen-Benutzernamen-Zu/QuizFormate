@@ -267,7 +267,7 @@ export default function MorphDuellPage() {
           </strong>
           <small>
             {generating
-              ? 'Die beiden Referenzbilder werden gerade zu einer neuen Figur verschmolzen. Das kann etwa eine Minute dauern.'
+              ? 'Die beiden Referenzbilder werden zu einer einfachen Charakteransicht auf schwarzem Hintergrund verschmolzen.'
               : 'Jeder Klick erzeugt eine neue Variante und speichert sie als Quizkarte.'}
           </small>
           <fieldset className="morph-difficulty" disabled={generating}>

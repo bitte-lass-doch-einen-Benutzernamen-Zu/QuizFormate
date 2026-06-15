@@ -214,18 +214,22 @@ Deno.serve(async (request) => {
     form.append('model', 'gpt-image-2')
     form.append('image[]', firstImage, `${firstChampion.id}.jpg`)
     form.append('image[]', secondImage, `${secondChampion.id}.jpg`)
-    form.append('quality', 'medium')
-    form.append('size', '1536x1024')
+    form.append('quality', 'low')
+    form.append('size', '1024x1024')
     form.append('output_format', 'webp')
     form.append(
       'prompt',
       [
-        `Create one coherent fantasy character that visually fuses ${firstChampion.name} and ${secondChampion.name} from the two reference images.`,
+        `Create one coherent League of Legends style character that visually fuses ${firstChampion.name} and ${secondChampion.name} from the two reference images.`,
         'The result must look like a single new person or creature, not two characters standing together.',
         'Blend the most recognizable facial features, silhouette, armor, colors, materials, and magical traits from both references evenly.',
         ...difficultyPrompts[difficulty],
-        'Cinematic League-inspired splash-art composition, centered full upper body, dramatic neutral fantasy background.',
-        'Do not add text, logos, labels, borders, split screens, collages, or duplicated bodies.',
+        'Use a clean and simple League of Legends character concept-art style, not cinematic splash art.',
+        'Show one centered character from the waist or chest up, facing mostly forward, large in frame and clearly separated from the background.',
+        'Use a completely uniform pure black background (#000000) with no scenery, environment, floor, horizon, gradient, texture, smoke, particles, aura, props, or decorative elements.',
+        'Use simple neutral studio lighting. Avoid dramatic rim lighting, lens effects, action poses, excessive detail, epic scale, and cinematic composition.',
+        'The character must be the only visible subject and occupy most of the square image.',
+        'Do not add text, logos, labels, borders, split screens, collages, extra characters, or duplicated bodies.',
       ].join(' '),
     )
 
