@@ -2,6 +2,8 @@ import { lazy, type ComponentType } from 'react'
 
 const loadFormats = () => import('../home/FormatsPage')
 const loadMorphDuell = () => import('../home/MorphDuellPage')
+const loadMorphQuiz = () =>
+  import('../formats/morph-duell/pages/MorphQuizPage')
 const loadQuizDuell = () =>
   import('../formats/quiz-duell/pages/QuizDuellPage')
 const loadAnswers = () =>
@@ -11,6 +13,7 @@ const routeComponents: Record<string, ComponentType> = {
   '/': lazy(loadFormats),
   '/quizduell': lazy(loadQuizDuell),
   '/morphduell': lazy(loadMorphDuell),
+  '/morphduell/quiz': lazy(loadMorphQuiz),
   '/answers': lazy(loadAnswers),
 }
 
@@ -18,6 +21,7 @@ export function preloadAdminRoute(pathname: string) {
   if (pathname === '/answers') return loadAnswers()
   if (pathname === '/quizduell') return loadQuizDuell()
   if (pathname === '/morphduell') return loadMorphDuell()
+  if (pathname === '/morphduell/quiz') return loadMorphQuiz()
   return loadFormats()
 }
 

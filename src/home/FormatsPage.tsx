@@ -28,7 +28,7 @@ const formats: FormatCard[] = [
       'Zwei Figuren verschmelzen. Hinweise aufdecken und den Morph erraten.',
     accent: '#ff4ecd',
     href: '/morphduell',
-    badge: 'In Arbeit',
+    badge: 'Spielbereit',
     symbol: 'M',
   },
   {

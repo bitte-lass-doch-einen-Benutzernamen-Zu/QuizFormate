@@ -1,16 +1,20 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   generateMorph,
   hasMorphOpenAIKey,
+  loadSavedMorphs,
+  saveMorphQuiz,
   setMorphOpenAIKey,
   type GeneratedMorph,
   type MorphDifficulty,
+  type SavedMorph,
 } from '../formats/morph-duell/api/generateMorph'
 import {
   loadLeagueChampions,
   type LeagueChampion,
 } from '../formats/morph-duell/data/leagueChampions'
 import './formats.css'
+import '../formats/morph-duell/styles/morph-quiz.css'
 
 const difficulties: Array<{
   value: MorphDifficulty
@@ -50,6 +54,25 @@ export default function MorphDuellPage() {
   const [generationError, setGenerationError] = useState('')
   const [activeMorph, setActiveMorph] = useState<GeneratedMorph | null>(null)
   const [revealedHints, setRevealedHints] = useState(0)
+  const [savedMorphs, setSavedMorphs] = useState<SavedMorph[]>([])
+  const [savedMorphsLoading, setSavedMorphsLoading] = useState(true)
+  const [quizSaving, setQuizSaving] = useState(false)
+  const [quizMessage, setQuizMessage] = useState('')
+
+  const refreshSavedMorphs = useCallback(async () => {
+    setSavedMorphsLoading(true)
+    try {
+      setSavedMorphs(await loadSavedMorphs())
+    } catch (reason) {
+      setQuizMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Die gespeicherten Morphs konnten nicht geladen werden.',
+      )
+    } finally {
+      setSavedMorphsLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -69,6 +92,29 @@ export default function MorphDuellPage() {
       })
       .finally(() => {
         if (active) setLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    loadSavedMorphs()
+      .then((morphs) => {
+        if (active) setSavedMorphs(morphs)
+      })
+      .catch((reason) => {
+        if (!active) return
+        setQuizMessage(
+          reason instanceof Error
+            ? reason.message
+            : 'Die gespeicherten Morphs konnten nicht geladen werden.',
+        )
+      })
+      .finally(() => {
+        if (active) setSavedMorphsLoading(false)
       })
 
     return () => {
@@ -136,6 +182,7 @@ export default function MorphDuellPage() {
         difficulty,
       )
       setActiveMorph(morph)
+      await refreshSavedMorphs()
     } catch (reason) {
       setGenerationError(
         reason instanceof Error
@@ -176,6 +223,77 @@ export default function MorphDuellPage() {
         `Die Anfangsbuchstaben der gesuchten Champions sind ${activeChampions[0].name[0]} und ${activeChampions[1].name[0]}.`,
       ]
     : []
+
+  const quizMorphs = useMemo(
+    () =>
+      savedMorphs
+        .filter((morph) => morph.inQuiz)
+        .sort(
+          (left, right) =>
+            (left.quizPosition ?? Number.MAX_SAFE_INTEGER) -
+            (right.quizPosition ?? Number.MAX_SAFE_INTEGER),
+        ),
+    [savedMorphs],
+  )
+
+  const toggleQuizMorph = (morphId: string) => {
+    setQuizMessage('')
+    setSavedMorphs((current) => {
+      const selectedCount = current.filter((morph) => morph.inQuiz).length
+      return current.map((morph) =>
+        morph.id === morphId
+          ? {
+              ...morph,
+              inQuiz: !morph.inQuiz,
+              quizPosition: morph.inQuiz ? null : selectedCount,
+            }
+          : morph,
+      )
+    })
+  }
+
+  const moveQuizMorph = (morphId: string, direction: -1 | 1) => {
+    const currentIndex = quizMorphs.findIndex((morph) => morph.id === morphId)
+    const targetIndex = currentIndex + direction
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= quizMorphs.length) {
+      return
+    }
+
+    const reordered = [...quizMorphs]
+    ;[reordered[currentIndex], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[currentIndex],
+    ]
+    const positions = new Map(
+      reordered.map((morph, index) => [morph.id, index]),
+    )
+    setSavedMorphs((current) =>
+      current.map((morph) => ({
+        ...morph,
+        quizPosition: positions.get(morph.id) ?? morph.quizPosition,
+      })),
+    )
+    setQuizMessage('')
+  }
+
+  const persistQuiz = async () => {
+    if (quizSaving) return
+    setQuizSaving(true)
+    setQuizMessage('')
+    try {
+      await saveMorphQuiz(savedMorphs)
+      setQuizMessage(`${quizMorphs.length} Quizkarten gespeichert.`)
+      await refreshSavedMorphs()
+    } catch (reason) {
+      setQuizMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Das Morph-Quiz konnte nicht gespeichert werden.',
+      )
+    } finally {
+      setQuizSaving(false)
+    }
+  }
 
   return (
     <main className="morph-library-page">
@@ -393,6 +511,105 @@ export default function MorphDuellPage() {
           </div>
         </section>
       )}
+
+      <section className="morph-quiz-builder">
+        <div className="morph-quiz-builder-head">
+          <div>
+            <span>Gespeicherte KI-Bilder</span>
+            <h2>Dein Morph-Quiz</h2>
+            <p>
+              Wähle Quizkarten aus, lege ihre Reihenfolge fest und starte danach
+              die Präsentationsansicht für deinen Spieleabend.
+            </p>
+          </div>
+          <div className="morph-quiz-builder-actions">
+            <strong>{quizMorphs.length} Karten ausgewählt</strong>
+            <button
+              disabled={quizSaving || savedMorphsLoading}
+              onClick={persistQuiz}
+              type="button"
+            >
+              {quizSaving ? 'Speichert...' : 'Quiz speichern'}
+            </button>
+            <a
+              aria-disabled={quizMorphs.length === 0}
+              className={quizMorphs.length === 0 ? 'disabled' : ''}
+              href="/morphduell/quiz"
+            >
+              Quiz starten
+            </a>
+          </div>
+        </div>
+
+        {quizMessage && <p className="morph-quiz-message">{quizMessage}</p>}
+
+        {savedMorphsLoading ? (
+          <div className="morph-quiz-empty">Gespeicherte Morphs werden geladen...</div>
+        ) : savedMorphs.length === 0 ? (
+          <div className="morph-quiz-empty">
+            Erzeuge oben deine erste KI-Fusion. Sie erscheint anschließend hier.
+          </div>
+        ) : (
+          <div className="morph-quiz-card-grid">
+            {savedMorphs.map((morph) => {
+              const quizIndex = quizMorphs.findIndex(
+                (item) => item.id === morph.id,
+              )
+              return (
+                <article
+                  className={morph.inQuiz ? 'selected' : ''}
+                  key={morph.id}
+                >
+                  <div className="morph-quiz-card-image">
+                    <img
+                      alt={`Morph aus ${morph.firstChampion.name} und ${morph.secondChampion.name}`}
+                      loading="lazy"
+                      src={morph.imageUrl}
+                    />
+                    {morph.inQuiz && <b>{quizIndex + 1}</b>}
+                  </div>
+                  <div className="morph-quiz-card-copy">
+                    <span>{difficulties.find(
+                      (option) => option.value === morph.difficulty,
+                    )?.label}</span>
+                    <strong>
+                      {morph.firstChampion.name} + {morph.secondChampion.name}
+                    </strong>
+                  </div>
+                  <div className="morph-quiz-card-actions">
+                    <button
+                      onClick={() => toggleQuizMorph(morph.id)}
+                      type="button"
+                    >
+                      {morph.inQuiz ? 'Entfernen' : 'Zum Quiz hinzufügen'}
+                    </button>
+                    {morph.inQuiz && (
+                      <>
+                        <button
+                          aria-label="Quizkarte nach vorne"
+                          disabled={quizIndex === 0}
+                          onClick={() => moveQuizMorph(morph.id, -1)}
+                          type="button"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          aria-label="Quizkarte nach hinten"
+                          disabled={quizIndex === quizMorphs.length - 1}
+                          onClick={() => moveQuizMorph(morph.id, 1)}
+                          type="button"
+                        >
+                          ↓
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
       <section className="champion-library">
         <div className="champion-library-toolbar">

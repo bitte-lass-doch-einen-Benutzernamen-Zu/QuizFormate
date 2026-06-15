@@ -277,7 +277,7 @@ Deno.serve(async (request) => {
       )
     }
 
-    const { error: insertError } = await supabase
+    const { data: insertedMorph, error: insertError } = await supabase
       .from('morph_generations')
       .insert({
         owner_id: userData.user.id,
@@ -288,6 +288,8 @@ Deno.serve(async (request) => {
         difficulty,
         image_path: imagePath,
       })
+      .select('id')
+      .single()
 
     if (insertError) {
       await supabase.storage.from(MORPH_BUCKET).remove([imagePath])
@@ -303,6 +305,7 @@ Deno.serve(async (request) => {
       .getPublicUrl(imagePath)
 
     return jsonResponse({
+      id: insertedMorph.id,
       imageUrl: publicImage.publicUrl,
       difficulty,
       firstChampion: {

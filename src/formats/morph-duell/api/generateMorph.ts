@@ -3,6 +3,7 @@ import { getSupabaseClient } from '../../../lib/supabase'
 export type MorphDifficulty = 'easy' | 'medium' | 'hard'
 
 export type GeneratedMorph = {
+  id: string
   imageUrl: string
   difficulty: MorphDifficulty
   firstChampion: {
@@ -14,6 +15,27 @@ export type GeneratedMorph = {
     name: string
   }
 }
+
+export type SavedMorph = GeneratedMorph & {
+  createdAt: string
+  inQuiz: boolean
+  quizPosition: number | null
+}
+
+type MorphGenerationRow = {
+  id: string
+  first_champion_id: string
+  first_champion_name: string
+  second_champion_id: string
+  second_champion_name: string
+  image_path: string
+  difficulty: MorphDifficulty
+  in_quiz: boolean
+  quiz_position: number | null
+  created_at: string
+}
+
+const MORPH_BUCKET = 'morph-images'
 
 export async function hasMorphOpenAIKey() {
   const client = await getSupabaseClient()
@@ -75,4 +97,60 @@ export async function generateMorph(
     throw new Error('Der Server hat kein generiertes Bild zurückgegeben.')
   }
   return data
+}
+
+export async function loadSavedMorphs() {
+  const client = await getSupabaseClient()
+  const { data, error } = await client
+    .from('morph_generations')
+    .select(
+      'id, first_champion_id, first_champion_name, second_champion_id, second_champion_name, image_path, difficulty, in_quiz, quiz_position, created_at',
+    )
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+
+  return (data as MorphGenerationRow[]).map((row): SavedMorph => ({
+    id: row.id,
+    imageUrl: client.storage.from(MORPH_BUCKET).getPublicUrl(row.image_path).data
+      .publicUrl,
+    difficulty: row.difficulty,
+    firstChampion: {
+      id: row.first_champion_id,
+      name: row.first_champion_name,
+    },
+    secondChampion: {
+      id: row.second_champion_id,
+      name: row.second_champion_name,
+    },
+    createdAt: row.created_at,
+    inQuiz: row.in_quiz,
+    quizPosition: row.quiz_position,
+  }))
+}
+
+export async function saveMorphQuiz(morphs: SavedMorph[]) {
+  const client = await getSupabaseClient()
+  const selectedMorphs = morphs
+    .filter((morph) => morph.inQuiz)
+    .sort(
+      (left, right) =>
+        (left.quizPosition ?? Number.MAX_SAFE_INTEGER) -
+        (right.quizPosition ?? Number.MAX_SAFE_INTEGER),
+    )
+
+  const updates = morphs.map((morph) => {
+    const position = selectedMorphs.findIndex((item) => item.id === morph.id)
+    return client
+      .from('morph_generations')
+      .update({
+        in_quiz: position >= 0,
+        quiz_position: position >= 0 ? position : null,
+      })
+      .eq('id', morph.id)
+  })
+
+  const results = await Promise.all(updates)
+  const failed = results.find((result) => result.error)
+  if (failed?.error) throw failed.error
 }
