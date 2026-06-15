@@ -90,7 +90,7 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const openAIKey = Deno.env.get('OPENAI_API_KEY')
+    let openAIKey = Deno.env.get('OPENAI_API_KEY')
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const authorization = request.headers.get('Authorization')
@@ -126,8 +126,20 @@ Deno.serve(async (request) => {
       )
     }
     if (!openAIKey) {
+      const { data: storedKey, error: storedKeyError } = await supabase
+        .rpc('get_morph_openai_key')
+      if (storedKeyError) {
+        console.error('Could not read OpenAI key from Vault', storedKeyError)
+      } else if (typeof storedKey === 'string') {
+        openAIKey = storedKey
+      }
+    }
+    if (!openAIKey) {
       return jsonResponse(
-        { error: 'Die KI-Bildgenerierung ist noch nicht konfiguriert.' },
+        {
+          code: 'OPENAI_NOT_CONFIGURED',
+          error: 'Richte zuerst den OpenAI API-Zugang ein.',
+        },
         503,
       )
     }

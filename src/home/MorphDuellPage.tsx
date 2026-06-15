@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   generateMorph,
+  hasMorphOpenAIKey,
+  setMorphOpenAIKey,
   type GeneratedMorph,
 } from '../formats/morph-duell/api/generateMorph'
 import {
@@ -16,6 +18,10 @@ export default function MorphDuellPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
+  const [providerConfigured, setProviderConfigured] = useState<boolean | null>(null)
+  const [apiKey, setApiKey] = useState('')
+  const [savingApiKey, setSavingApiKey] = useState(false)
+  const [configurationError, setConfigurationError] = useState('')
   const [libraryError, setLibraryError] = useState('')
   const [generationError, setGenerationError] = useState('')
   const [activeMorph, setActiveMorph] = useState<GeneratedMorph | null>(null)
@@ -40,6 +46,20 @@ export default function MorphDuellPage() {
         if (active) setLoading(false)
       })
 
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    hasMorphOpenAIKey()
+      .then((configured) => {
+        if (active) setProviderConfigured(configured)
+      })
+      .catch(() => {
+        if (active) setProviderConfigured(false)
+      })
     return () => {
       active = false
     }
@@ -100,6 +120,26 @@ export default function MorphDuellPage() {
     }
   }
 
+  const saveProviderConfiguration = async () => {
+    if (!apiKey.trim() || savingApiKey) return
+    setSavingApiKey(true)
+    setConfigurationError('')
+    try {
+      await setMorphOpenAIKey(apiKey)
+      setApiKey('')
+      setProviderConfigured(true)
+      setGenerationError('')
+    } catch (reason) {
+      setConfigurationError(
+        reason instanceof Error
+          ? reason.message
+          : 'Der API-Key konnte nicht gespeichert werden.',
+      )
+    } finally {
+      setSavingApiKey(false)
+    }
+  }
+
   return (
     <main className="morph-library-page">
       <div className="formats-grid-bg" aria-hidden="true" />
@@ -119,6 +159,45 @@ export default function MorphDuellPage() {
           {version ? `Data Dragon ${version}` : 'Data Dragon'}
         </div>
       </header>
+
+      {providerConfigured === false && (
+        <section className="morph-provider-setup">
+          <div>
+            <span>Einmalige Einrichtung</span>
+            <h2>KI-Bildgenerierung verbinden</h2>
+            <p>
+              Hinterlege einen OpenAI API-Key. Er wird verschlüsselt in
+              Supabase Vault gespeichert und nicht im Browser behalten.
+            </p>
+          </div>
+          <div className="morph-provider-form">
+            <label>
+              <span>OpenAI API-Key</span>
+              <input
+                autoComplete="off"
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder="sk-..."
+                type="password"
+                value={apiKey}
+              />
+            </label>
+            <button
+              disabled={!apiKey.trim() || savingApiKey}
+              onClick={saveProviderConfiguration}
+              type="button"
+            >
+              {savingApiKey ? 'Wird gespeichert...' : 'Sicher verbinden'}
+            </button>
+            {configurationError && (
+              <p role="alert">{configurationError}</p>
+            )}
+            <small>
+              API-Nutzung wird von OpenAI separat verrechnet. Ein
+              ChatGPT-Abonnement enthält nicht automatisch API-Guthaben.
+            </small>
+          </div>
+        </section>
+      )}
 
       <section className="morph-selection">
         {[0, 1].map((slot) => {
@@ -167,11 +246,19 @@ export default function MorphDuellPage() {
               : 'Jeder Klick erzeugt eine neue Variante und speichert sie als Quizkarte.'}
           </small>
           <button
-            disabled={selectedChampions.length !== 2 || generating}
+            disabled={
+              selectedChampions.length !== 2 ||
+              generating ||
+              providerConfigured !== true
+            }
             onClick={createMorph}
             type="button"
           >
-            {generating ? 'Fusion wird generiert...' : 'Mit KI fusionieren'}
+            {generating
+              ? 'Fusion wird generiert...'
+              : providerConfigured === false
+                ? 'Zuerst KI verbinden'
+                : 'Mit KI fusionieren'}
           </button>
           {generationError && (
             <p className="fusion-error" role="alert">{generationError}</p>

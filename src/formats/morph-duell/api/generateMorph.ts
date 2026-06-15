@@ -12,6 +12,21 @@ export type GeneratedMorph = {
   }
 }
 
+export async function hasMorphOpenAIKey() {
+  const client = await getSupabaseClient()
+  const { data, error } = await client.rpc('has_morph_openai_key')
+  if (error) throw error
+  return data === true
+}
+
+export async function setMorphOpenAIKey(apiKey: string) {
+  const client = await getSupabaseClient()
+  const { error } = await client.rpc('set_morph_openai_key', {
+    api_key: apiKey.trim(),
+  })
+  if (error) throw error
+}
+
 async function readFunctionError(error: unknown) {
   if (!error || typeof error !== 'object') {
     return 'Die KI-Fusion ist fehlgeschlagen.'
