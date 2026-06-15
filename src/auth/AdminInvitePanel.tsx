@@ -37,7 +37,7 @@ export default function AdminInvitePanel() {
 
       {open && (
         <section className="invite-popover">
-          <h2>Spieleabend freigeben</h2>
+          <h2>Persönlichen Zugang erstellen</h2>
           <form onSubmit={submit}>
             <label>
               Titel
@@ -60,7 +60,7 @@ export default function AdminInvitePanel() {
               />
             </label>
             <button disabled={submitting} type="submit">
-              {submitting ? 'Erstelle...' : 'Invite-Code erstellen'}
+              {submitting ? 'Erstelle...' : 'Persönlichen Code erstellen'}
             </button>
           </form>
           {error && <p className="access-error">{error}</p>}
@@ -68,6 +68,7 @@ export default function AdminInvitePanel() {
             <div className="invite-result">
               <span>Invite-Code</span>
               <strong>{invite.code}</strong>
+              <small>Für genau einen aktiven Teilnehmer</small>
               <small>
                 Gültig bis {new Date(invite.expiresAt).toLocaleString('de-AT')}
               </small>

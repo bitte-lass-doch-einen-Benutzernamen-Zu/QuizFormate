@@ -1,9 +1,12 @@
+import { useEffect, useRef } from 'react'
 import { useBuzzer } from '../buzzer/useBuzzer'
+import { getSupabaseClient } from '../lib/supabase'
 import { useAuth } from './authContext'
 import '../buzzer/buzzer.css'
 
 export default function ViewerPage() {
   const { guestAccess, session, signOut } = useAuth()
+  const signOutRef = useRef(signOut)
   const buzzer = useBuzzer(guestAccess?.roomId)
   const ownEntry = buzzer.state?.queue.find(
     (entry) => entry.userId === session?.user.id,
@@ -12,6 +15,64 @@ export default function ViewerPage() {
   const canPress = Boolean(
     buzzer.state?.isOpen && !ownEntry && !buzzer.busy,
   )
+
+  useEffect(() => {
+    signOutRef.current = signOut
+  }, [signOut])
+
+  useEffect(() => {
+    const userId = session?.user.id
+    if (!userId) return
+
+    let active = true
+    let leaving = false
+    let cleanupChannel = () => {}
+
+    const leaveRemovedSession = () => {
+      if (leaving || !active) return
+      leaving = true
+      void signOutRef.current()
+    }
+
+    getSupabaseClient().then((client) => {
+      if (!active) return
+      const checkMembership = async () => {
+        const { data, error } = await client
+          .from('game_night_participants')
+          .select('room_id')
+          .eq('user_id', userId)
+          .maybeSingle()
+
+        if (!error && !data) leaveRemovedSession()
+      }
+
+      void checkMembership()
+      const timer = window.setInterval(checkMembership, 10000)
+      const channel = client
+        .channel(`participant:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'game_night_participants',
+            filter: `user_id=eq.${userId}`,
+          },
+          leaveRemovedSession,
+        )
+        .subscribe()
+
+      cleanupChannel = () => {
+        window.clearInterval(timer)
+        void client.removeChannel(channel)
+      }
+    })
+
+    return () => {
+      active = false
+      cleanupChannel()
+    }
+  }, [session?.user.id])
 
   const status = buzzer.loading
     ? 'Verbindung wird hergestellt'

@@ -292,11 +292,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const joinWithCode = async (code: string, displayName: string) => {
     const client = await getSupabaseClient()
     authOperationRef.current += 1
-    await client.auth.signOut()
-    const { data: authData, error: authError } =
-      await client.auth.signInAnonymously()
-    if (authError) throw authError
-    if (!authData.user || !authData.session) {
+    const { data: sessionData } = await client.auth.getSession()
+    let guestSession = sessionData.session
+
+    if (!guestSession?.user.is_anonymous) {
+      if (guestSession) await client.auth.signOut()
+      const { data: authData, error: authError } =
+        await client.auth.signInAnonymously()
+      if (authError) throw authError
+      guestSession = authData.session
+    }
+
+    if (!guestSession?.user) {
       throw new Error('Supabase hat keine Gastsitzung erstellt.')
     }
 
@@ -314,7 +321,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await client.auth.signOut()
       throw new Error('Der Server hat keine gültige Einladung zurückgegeben.')
     }
-    setSession(authData.session)
+    setSession(guestSession)
     setRole('viewer')
     setGuestAccess(access)
     const nextActiveRoom = {
@@ -324,7 +331,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setActiveRoom(nextActiveRoom)
     writeCachedAccess({
-      userId: authData.user.id,
+      userId: guestSession.user.id,
       role: 'viewer',
       guestAccess: access,
       activeRoom: nextActiveRoom,
@@ -377,6 +384,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authOperationRef.current += 1
     if (isSupabaseConfigured) {
       const client = await getSupabaseClient()
+      if (role === 'viewer') {
+        await client.rpc('leave_game_night')
+      }
       await client.auth.signOut()
     }
     setSession(null)
