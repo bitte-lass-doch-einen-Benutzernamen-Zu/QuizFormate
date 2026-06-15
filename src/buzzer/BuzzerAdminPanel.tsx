@@ -8,6 +8,24 @@ export default function BuzzerAdminPanel() {
   const buzzer = useBuzzer(activeRoom?.roomId)
   const [open, setOpen] = useState(false)
 
+  const removeParticipant = (userId: string, displayName: string) => {
+    if (!window.confirm(`${displayName} wirklich aus dem Raum entfernen?`)) {
+      return
+    }
+    void buzzer.removeParticipant(userId)
+  }
+
+  const removeAllParticipants = () => {
+    if (
+      !window.confirm(
+        'Wirklich alle Teilnehmer entfernen? Alle Gäste werden ausgeloggt.',
+      )
+    ) {
+      return
+    }
+    void buzzer.removeAllParticipants()
+  }
+
   return (
     <aside className={`buzzer-admin${open ? ' open' : ''}`}>
       <button
@@ -97,6 +115,92 @@ export default function BuzzerAdminPanel() {
                   </div>
                 </button>
               </div>
+
+              <section className="interaction-section participant-manager">
+                <div className="participant-manager-head">
+                  <div>
+                    <span>Teilnehmer</span>
+                    <strong>
+                      {buzzer.state?.participants.length ?? 0} im Raum
+                    </strong>
+                  </div>
+                  <button
+                    disabled={
+                      buzzer.busy ||
+                      (buzzer.state?.participants.length ?? 0) === 0
+                    }
+                    onClick={removeAllParticipants}
+                    type="button"
+                  >
+                    Alle entfernen
+                  </button>
+                </div>
+
+                <ol className="participant-list">
+                  {buzzer.state?.participants.length ? (
+                    buzzer.state.participants.map((participant) => (
+                      <li key={participant.userId}>
+                        <div className="participant-info">
+                          <span className="participant-avatar">
+                            {participant.displayName.slice(0, 1).toUpperCase()}
+                          </span>
+                          <div>
+                            <strong>{participant.displayName}</strong>
+                            <small>
+                              Seit{' '}
+                              {new Date(participant.joinedAt).toLocaleTimeString(
+                                'de-AT',
+                                {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                },
+                              )}
+                            </small>
+                          </div>
+                        </div>
+                        <div className="participant-statuses">
+                          {participant.buzzerPosition && (
+                            <span>Buzzer #{participant.buzzerPosition}</span>
+                          )}
+                          {participant.hasText && <span>Text gesendet</span>}
+                          {!participant.buzzerPosition &&
+                            !participant.hasText && <span>Bereit</span>}
+                        </div>
+                        <div className="participant-actions">
+                          <button
+                            disabled={
+                              buzzer.busy ||
+                              (!participant.buzzerPosition &&
+                                !participant.hasText)
+                            }
+                            onClick={() =>
+                              buzzer.resetParticipant(participant.userId)
+                            }
+                            title="Buzzerplatz und Text löschen"
+                            type="button"
+                          >
+                            Zurücksetzen
+                          </button>
+                          <button
+                            disabled={buzzer.busy}
+                            onClick={() =>
+                              removeParticipant(
+                                participant.userId,
+                                participant.displayName,
+                              )
+                            }
+                            type="button"
+                          >
+                            Entfernen
+                          </button>
+                        </div>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="empty">Noch keine Teilnehmer im Raum.</li>
+                  )}
+                </ol>
+              </section>
 
               {buzzer.state?.buzzerVisible && (
                 <section className="interaction-section">

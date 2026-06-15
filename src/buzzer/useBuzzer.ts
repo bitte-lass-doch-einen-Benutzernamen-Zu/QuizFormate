@@ -15,6 +15,14 @@ export type RoomTextEntry = {
   submittedAt: string
 }
 
+export type RoomParticipant = {
+  userId: string
+  displayName: string
+  joinedAt: string
+  buzzerPosition: number | null
+  hasText: boolean
+}
+
 export type BuzzerState = {
   roomId: string
   isOpen: boolean
@@ -26,6 +34,7 @@ export type BuzzerState = {
   updatedAt: string
   queue: BuzzerEntry[]
   textEntries: RoomTextEntry[]
+  participants: RoomParticipant[]
 }
 
 type BuzzerPayload = {
@@ -48,6 +57,13 @@ type BuzzerPayload = {
     display_name: string
     content: string
     submitted_at: string
+  }[]
+  participants?: {
+    user_id: string
+    display_name: string
+    joined_at: string
+    buzzer_position: number | null
+    has_text: boolean
   }[]
 }
 
@@ -73,6 +89,13 @@ function parseBuzzerState(value: unknown): BuzzerState {
       displayName: entry.display_name,
       content: entry.content,
       submittedAt: entry.submitted_at,
+    })),
+    participants: (payload.participants ?? []).map((participant) => ({
+      userId: participant.user_id,
+      displayName: participant.display_name,
+      joinedAt: participant.joined_at,
+      buzzerPosition: participant.buzzer_position,
+      hasText: participant.has_text,
     })),
   }
 }
@@ -234,5 +257,19 @@ export function useBuzzer(roomId: string | undefined) {
       }),
     clearTexts: () =>
       runRpc('clear_room_texts', { check_room_id: roomId }),
+    resetParticipant: (userId: string) =>
+      runRpc('manage_room_participant', {
+        check_room_id: roomId,
+        participant_user_id: userId,
+        participant_action: 'reset',
+      }),
+    removeParticipant: (userId: string) =>
+      runRpc('manage_room_participant', {
+        check_room_id: roomId,
+        participant_user_id: userId,
+        participant_action: 'remove',
+      }),
+    removeAllParticipants: () =>
+      runRpc('remove_all_room_participants', { check_room_id: roomId }),
   }
 }

@@ -8,6 +8,7 @@ Lokale Quizshow-Web-App für Freunde, gebaut mit React, Vite und TypeScript. Das
 - Atomarer Live-Buzzer mit vollständiger Reihenfolge aller Teilnehmer
 - Realtime-Schalter für Buzzer und Texteingaben
 - Live-Textantworten der Gäste für die Spielleitung
+- Teilnehmerverwaltung mit Entfernen und individuellem Interaktions-Reset
 - Gemeinsamer aktiver Raum mit persönlichen Einmal-Invite-Codes
 - 2 Quizboards mit insgesamt 12 Kategorien und 48 Fragen
 - Board 1: `100`, `200`, `300` und `500` Punkte
