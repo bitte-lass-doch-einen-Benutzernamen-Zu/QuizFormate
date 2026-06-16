@@ -12,6 +12,7 @@ export type VoiceQuizQuestion = {
   championName: string
   championTitle: string
   audioUrl: string
+  audioPath: string | null
   sourceType: 'communitydragon' | 'upload'
   inQuiz: boolean
   quizPosition: number | null
@@ -48,6 +49,7 @@ function mapQuestion(
     championTitle: row.champion_title,
     audioUrl:
       row.audio_url ?? (row.audio_path ? publicUrl(row.audio_path) : ''),
+    audioPath: row.audio_path,
     sourceType: row.source_type,
     inQuiz: row.in_quiz,
     quizPosition: row.quiz_position,
@@ -152,4 +154,17 @@ export async function saveVoiceQuiz(questions: VoiceQuizQuestion[]) {
   )
   const failed = results.find((result) => result.error)
   if (failed?.error) throw failed.error
+}
+
+export async function deleteVoiceQuestion(question: VoiceQuizQuestion) {
+  const client = await getSupabaseClient()
+  const { error } = await client
+    .from('voice_quiz_questions')
+    .delete()
+    .eq('id', question.id)
+  if (error) throw error
+
+  if (question.audioPath) {
+    await client.storage.from(VOICE_BUCKET).remove([question.audioPath])
+  }
 }

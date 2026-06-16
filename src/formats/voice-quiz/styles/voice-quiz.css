@@ -250,9 +250,9 @@
 .voice-card-grid small { color: #4cc9f0; font-size: .57rem; text-transform: uppercase; }
 .voice-card-grid article > div > b { position: absolute; right: 0; display: grid; width: 28px; height: 28px; place-items: center; border-radius: 50%; color: #05030b; background: #4cc9f0; }
 .voice-card-grid audio { width: 100%; height: 36px; }
-.voice-card-grid footer { display: flex; gap: 5px; }
+.voice-card-grid footer { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, auto); gap: 5px; }
 .voice-card-grid footer button { cursor: pointer; padding: 8px; border: 1px solid rgba(167, 139, 250, .25); color: #d8d2df; background: rgba(167, 139, 250, .06); font-size: .62rem; font-weight: 800; text-transform: uppercase; }
-.voice-card-grid footer button:first-child { flex: 1; }
+.voice-card-grid footer button.danger { border-color: rgba(255, 120, 151, .4); color: #ff7897; background: rgba(255, 120, 151, .06); }
 .voice-card-grid footer button:disabled { cursor: default; opacity: .35; }
 
 .voice-play-page { padding-top: 26px; overflow: hidden; }

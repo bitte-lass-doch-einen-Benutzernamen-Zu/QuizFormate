@@ -5,6 +5,7 @@ import {
 } from '../../morph-duell/data/leagueChampions'
 import {
   addCommunityDragonVoice,
+  deleteVoiceQuestion,
   getCommunityDragonVoiceUrl,
   loadVoiceQuestions,
   saveVoiceQuiz,
@@ -146,6 +147,20 @@ export default function VoiceQuizStudioPage() {
       })),
     )
     setDirty(true)
+  }
+
+  const removeQuestion = (question: VoiceQuizQuestion) => {
+    if (
+      !window.confirm(
+        `Audioclip fuer ${question.championName} wirklich loeschen?`,
+      )
+    ) {
+      return
+    }
+    void run(
+      () => deleteVoiceQuestion(question),
+      `${question.championName}-Clip wurde geloescht.`,
+    )
   }
 
   if (loading) {
@@ -317,6 +332,14 @@ export default function VoiceQuizStudioPage() {
                         </button>
                       </>
                     )}
+                    <button
+                      className="danger"
+                      disabled={busy}
+                      onClick={() => removeQuestion(question)}
+                      type="button"
+                    >
+                      Loeschen
+                    </button>
                   </footer>
                 </article>
               )
