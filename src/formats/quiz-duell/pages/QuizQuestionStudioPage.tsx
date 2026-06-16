@@ -5,11 +5,16 @@ import {
   type TriviaCandidate,
 } from '../api/triviaApi'
 import {
+  createQuizSet,
+  deleteQuizSet,
   defaultBoards,
   loadQuizBoards,
+  loadQuizSets,
   resetQuizBoards,
+  saveActiveQuizSetId,
   saveQuizBoards,
   type QuizBoard,
+  type QuizSetMeta,
   type QuizQuestion,
 } from '../data/questions'
 import '../styles/quiz-duell.css'
@@ -62,7 +67,14 @@ function slotLabel(board: QuizBoard, categoryIndex: number, questionIndex: numbe
 }
 
 export default function QuizQuestionStudioPage() {
-  const [boards, setBoards] = useState(() => cloneBoards(loadQuizBoards()))
+  const [sets, setSets] = useState<QuizSetMeta[]>(loadQuizSets)
+  const [openSetId, setOpenSetId] = useState(() => sets[0]?.id ?? '')
+  const [boardsBySet, setBoardsBySet] = useState<Record<string, QuizBoard[]>>(
+    () =>
+      sets[0]
+        ? { [sets[0].id]: cloneBoards(loadQuizBoards(sets[0].id)) }
+        : {},
+  )
   const [categoryId, setCategoryId] = useState('general_knowledge')
   const [difficulty, setDifficulty] = useState('any')
   const [candidatesByCategory, setCandidatesByCategory] = useState<
@@ -74,6 +86,7 @@ export default function QuizQuestionStudioPage() {
   const [selectedSlot, setSelectedSlot] = useState('0:0:0')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const boards = boardsBySet[openSetId] ?? []
 
   const candidates = candidatesByCategory[categoryId] ?? []
   const selectedCandidate = candidates.find(
@@ -85,6 +98,53 @@ export default function QuizQuestionStudioPage() {
     [selectedSlot],
   )
   const activeLoadKey = `${categoryId}:${difficulty}`
+
+  const openSet = (setId: string) => {
+    if (openSetId === setId) {
+      setOpenSetId('')
+      return
+    }
+    setOpenSetId(setId)
+    saveActiveQuizSetId(setId)
+    setSelectedSlot('0:0:0')
+    setBoardsBySet((current) =>
+      current[setId]
+        ? current
+        : { ...current, [setId]: cloneBoards(loadQuizBoards(setId)) },
+    )
+  }
+
+  const addSet = () => {
+    const nextSet = createQuizSet()
+    setSets(loadQuizSets())
+    setBoardsBySet((current) => ({
+      ...current,
+      [nextSet.id]: cloneBoards(loadQuizBoards(nextSet.id)),
+    }))
+    setOpenSetId(nextSet.id)
+    setSelectedSlot('0:0:0')
+  }
+
+  const removeSet = (setId: string) => {
+    if (sets.length <= 1) return
+    const set = sets.find((item) => item.id === setId)
+    if (!window.confirm(`${set?.title ?? 'Quiz Set'} wirklich loeschen?`)) {
+      return
+    }
+    const nextSets = deleteQuizSet(setId)
+    setSets(nextSets)
+    setBoardsBySet((current) => {
+      const next = { ...current }
+      delete next[setId]
+      return next
+    })
+    const nextOpenSetId =
+      openSetId === setId ? nextSets[0]?.id ?? '' : openSetId
+    if (nextOpenSetId) {
+      setOpenSetId(nextOpenSetId)
+      saveActiveQuizSetId(nextOpenSetId)
+    }
+  }
 
   const fetchQuestions = useCallback(async (append = false) => {
     if (loading) return
@@ -135,8 +195,10 @@ export default function QuizQuestionStudioPage() {
   }, [activeLoadKey, candidates.length, fetchQuestions, loadedKeys, loading])
 
   const updateBoards = (nextBoards: QuizBoard[], success: string) => {
-    setBoards(nextBoards)
-    saveQuizBoards(nextBoards)
+    if (!openSetId) return
+    setBoardsBySet((current) => ({ ...current, [openSetId]: nextBoards }))
+    saveQuizBoards(nextBoards, openSetId)
+    setSets(loadQuizSets())
     setMessage(success)
   }
 
@@ -176,8 +238,10 @@ export default function QuizQuestionStudioPage() {
       return
     }
     const nextBoards = cloneBoards(defaultBoards)
-    setBoards(nextBoards)
-    resetQuizBoards()
+    if (!openSetId) return
+    setBoardsBySet((current) => ({ ...current, [openSetId]: nextBoards }))
+    resetQuizBoards(openSetId)
+    setSets(loadQuizSets())
     setMessage('Standardfragen wiederhergestellt.')
   }
 
@@ -190,12 +254,66 @@ export default function QuizQuestionStudioPage() {
           <span className="eyebrow">Quizduell</span>
           <h1>Fragen-Studio</h1>
         </div>
-        <button onClick={restoreDefaults} type="button">
-          Standards laden
+        <button onClick={addSet} type="button" aria-label="Quiz Set erstellen">
+          + Set
         </button>
       </header>
 
-      <section className="question-studio-layout">
+      <section className="quiz-set-manager">
+        <div className="quiz-set-manager-head">
+          <div>
+            <span>Quiz Sets</span>
+            <strong>{sets.length} gespeichert</strong>
+          </div>
+          <button onClick={restoreDefaults} type="button" disabled={!openSetId}>
+            Standards ins offene Set
+          </button>
+        </div>
+        <div className="quiz-set-list">
+          {sets.map((set) => {
+            const isOpen = set.id === openSetId
+            const loadedQuestionCount = boardsBySet[set.id]?.reduce(
+              (sum, board) =>
+                sum +
+                board.categories.reduce(
+                  (categorySum, category) =>
+                    categorySum + category.questions.length,
+                  0,
+                ),
+              0,
+            )
+            return (
+              <article className={isOpen ? 'open' : ''} key={set.id}>
+                <button onClick={() => openSet(set.id)} type="button">
+                  <span>{isOpen ? '▾' : '▸'}</span>
+                  <strong>{set.title}</strong>
+                  <small>
+                    {loadedQuestionCount
+                      ? `${loadedQuestionCount} Fragen geladen`
+                      : 'Fragen nicht geladen'}
+                  </small>
+                </button>
+                <button
+                  aria-label={`${set.title} loeschen`}
+                  disabled={sets.length <= 1}
+                  onClick={() => removeSet(set.id)}
+                  type="button"
+                >
+                  -
+                </button>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      {!openSetId ? (
+        <section className="question-studio-closed">
+          Oeffne ein Quiz Set, um Fragen zu laden und zu bearbeiten.
+        </section>
+      ) : (
+      <>
+        <section className="question-studio-layout">
         <aside className="question-import-panel">
           <div>
             <span>The Trivia API</span>
@@ -343,9 +461,9 @@ export default function QuizQuestionStudioPage() {
             )}
           </div>
         </section>
-      </section>
+        </section>
 
-      <section className="question-board-editor">
+        <section className="question-board-editor">
         {boards.map((board, boardIndex) => (
           <article key={board.id}>
             <h2>{board.title}</h2>
@@ -388,7 +506,9 @@ export default function QuizQuestionStudioPage() {
             </div>
           </article>
         ))}
-      </section>
+        </section>
+      </>
+      )}
     </main>
   )
 }

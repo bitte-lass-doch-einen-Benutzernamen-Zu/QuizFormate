@@ -22,6 +22,7 @@ type TriviaApiQuestion = {
 }
 
 const API_ROOT = 'https://the-trivia-api.com/v2/questions'
+const TRANSLATE_ROOT = 'https://api.mymemory.translated.net/get'
 
 export const triviaCategories: TriviaCategory[] = [
   { id: 'any', name: 'Alle Kategorien' },
@@ -60,11 +61,59 @@ export async function loadTriviaQuestions(options: {
   if (!response.ok) throw new Error('Fragen konnten nicht geladen werden.')
   const payload = (await response.json()) as TriviaApiQuestion[]
 
-  return payload.map((question): TriviaCandidate => ({
-    id: question.id,
-    category: categoryLabels.get(question.category) ?? question.category,
-    difficulty: question.difficulty,
-    question: question.question.text,
-    answer: question.correctAnswer,
-  }))
+  const difficultyOrder = new Map([
+    ['easy', 0],
+    ['medium', 1],
+    ['hard', 2],
+  ])
+  const candidates = payload
+    .filter(
+      (question) =>
+        options.difficulty === 'any' ||
+        question.difficulty === options.difficulty,
+    )
+    .sort(
+      (left, right) =>
+        (difficultyOrder.get(left.difficulty) ?? 99) -
+        (difficultyOrder.get(right.difficulty) ?? 99),
+    )
+    .map((question): TriviaCandidate => ({
+      id: question.id,
+      category: categoryLabels.get(question.category) ?? question.category,
+      difficulty: question.difficulty,
+      question: question.question.text,
+      answer: question.correctAnswer,
+    }))
+
+  return translateCandidates(candidates)
+}
+
+async function translateText(text: string) {
+  if (!text.trim()) return text
+  const params = new URLSearchParams({
+    q: text.slice(0, 480),
+    langpair: 'en|de',
+  })
+  try {
+    const response = await fetch(`${TRANSLATE_ROOT}?${params.toString()}`)
+    if (!response.ok) return text
+    const payload = (await response.json()) as {
+      responseData?: { translatedText?: string }
+    }
+    return payload.responseData?.translatedText?.trim() || text
+  } catch {
+    return text
+  }
+}
+
+async function translateCandidates(candidates: TriviaCandidate[]) {
+  const translated: TriviaCandidate[] = []
+  for (const candidate of candidates) {
+    const [question, answer] = await Promise.all([
+      translateText(candidate.question),
+      translateText(candidate.answer),
+    ])
+    translated.push({ ...candidate, question, answer })
+  }
+  return translated
 }

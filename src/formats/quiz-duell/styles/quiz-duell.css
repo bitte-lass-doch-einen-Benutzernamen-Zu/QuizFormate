@@ -1054,12 +1054,124 @@
   text-transform: uppercase;
 }
 
+.quiz-set-manager {
+  max-width: 1600px;
+  margin: 0 auto 18px;
+  padding: 14px;
+  border: 1px solid rgba(167, 139, 250, .18);
+  background: rgba(12, 8, 24, .84);
+}
+
+.quiz-set-manager-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.quiz-set-manager-head > div {
+  display: grid;
+  gap: 3px;
+}
+
+.quiz-set-manager-head span {
+  color: #00f5d4;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.quiz-set-manager-head strong {
+  color: #aaa2b6;
+  font-size: .72rem;
+}
+
+.quiz-set-manager-head button {
+  cursor: pointer;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 207, 74, .35);
+  color: #ffcf4a;
+  background: rgba(255, 207, 74, .07);
+  font-size: .64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.quiz-set-list {
+  display: grid;
+  gap: 7px;
+}
+
+.quiz-set-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 7px;
+}
+
+.quiz-set-list button {
+  cursor: pointer;
+  border: 1px solid rgba(167, 139, 250, .18);
+  color: #d8d2df;
+  background: rgba(167, 139, 250, .05);
+}
+
+.quiz-set-list article > button:first-child {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 42px;
+  padding: 9px 11px;
+  text-align: left;
+}
+
+.quiz-set-list article.open > button:first-child {
+  border-color: rgba(0, 245, 212, .48);
+  background: rgba(0, 245, 212, .07);
+}
+
+.quiz-set-list strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quiz-set-list small {
+  color: #716879;
+  font-size: .62rem;
+  text-transform: uppercase;
+}
+
+.quiz-set-list article > button:last-child {
+  color: #ff7897;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.quiz-set-list button:disabled,
+.quiz-set-manager-head button:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+}
+
 .question-studio-layout {
   display: grid;
   grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
   gap: 14px;
   max-width: 1600px;
   margin: 0 auto 18px;
+}
+
+.question-studio-closed {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 42px 20px;
+  border: 1px dashed rgba(167, 139, 250, .24);
+  color: #716879;
+  background: rgba(12, 8, 24, .5);
+  text-align: center;
 }
 
 .question-import-panel,

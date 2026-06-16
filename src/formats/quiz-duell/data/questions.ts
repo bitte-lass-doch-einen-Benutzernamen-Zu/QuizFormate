@@ -22,6 +22,13 @@ export type QuizBoard = {
   categories: QuizCategory[]
 }
 
+export type QuizSetMeta = {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
+}
+
 type QuestionInput = Omit<QuizQuestion, 'id' | 'category' | 'points'>
 
 const pointSteps = [100, 200, 300, 500]
@@ -136,7 +143,14 @@ const boardTwo: QuizBoard = {
 export const defaultBoards: QuizBoard[] = [boardOne, boardTwo]
 
 export const QUIZ_BOARDS_STORAGE_KEY = 'quiz-duell-boards-v1'
+export const QUIZ_SETS_STORAGE_KEY = 'quiz-duell-sets-v1'
+export const ACTIVE_QUIZ_SET_STORAGE_KEY = 'quiz-duell-active-set-v1'
 export const QUIZ_BOARDS_EVENT = 'quiz-duell-boards-updated'
+const DEFAULT_SET_ID = 'default'
+
+function quizSetBoardsKey(setId: string) {
+  return `quiz-duell-set-boards-v1:${setId}`
+}
 
 function isQuestion(value: unknown): value is QuizQuestion {
   if (!value || typeof value !== 'object') return false
@@ -174,29 +188,124 @@ function isBoard(value: unknown): value is QuizBoard {
   )
 }
 
-export function loadQuizBoards(): QuizBoard[] {
-  if (typeof localStorage === 'undefined') return defaultBoards
+function isQuizSetMeta(value: unknown): value is QuizSetMeta {
+  if (!value || typeof value !== 'object') return false
+  const set = value as Partial<QuizSetMeta>
+  return (
+    typeof set.id === 'string' &&
+    typeof set.title === 'string' &&
+    typeof set.createdAt === 'string' &&
+    typeof set.updatedAt === 'string'
+  )
+}
+
+function readBoardsFromKey(key: string, fallback: QuizBoard[]) {
   try {
-    const saved = localStorage.getItem(QUIZ_BOARDS_STORAGE_KEY)
-    if (!saved) return defaultBoards
+    const saved = localStorage.getItem(key)
+    if (!saved) return fallback
     const parsed = JSON.parse(saved) as unknown
     return Array.isArray(parsed) && parsed.every(isBoard)
       ? parsed
-      : defaultBoards
+      : fallback
   } catch {
-    localStorage.removeItem(QUIZ_BOARDS_STORAGE_KEY)
-    return defaultBoards
+    localStorage.removeItem(key)
+    return fallback
   }
 }
 
-export function saveQuizBoards(nextBoards: QuizBoard[]) {
-  localStorage.setItem(QUIZ_BOARDS_STORAGE_KEY, JSON.stringify(nextBoards))
+function ensureQuizSets() {
+  if (typeof localStorage === 'undefined') return []
+  try {
+    const savedSets = localStorage.getItem(QUIZ_SETS_STORAGE_KEY)
+    if (savedSets) {
+      const parsed = JSON.parse(savedSets) as unknown
+      if (Array.isArray(parsed) && parsed.every(isQuizSetMeta)) {
+        return parsed
+      }
+    }
+  } catch {
+    localStorage.removeItem(QUIZ_SETS_STORAGE_KEY)
+  }
+
+  const now = new Date().toISOString()
+  const initialSet: QuizSetMeta = {
+    id: DEFAULT_SET_ID,
+    title: 'Standard Quiz',
+    createdAt: now,
+    updatedAt: now,
+  }
+  const legacyBoards = readBoardsFromKey(QUIZ_BOARDS_STORAGE_KEY, defaultBoards)
+  localStorage.setItem(quizSetBoardsKey(initialSet.id), JSON.stringify(legacyBoards))
+  localStorage.setItem(QUIZ_SETS_STORAGE_KEY, JSON.stringify([initialSet]))
+  localStorage.setItem(ACTIVE_QUIZ_SET_STORAGE_KEY, initialSet.id)
+  return [initialSet]
+}
+
+export function loadQuizSets() {
+  return ensureQuizSets()
+}
+
+export function loadActiveQuizSetId() {
+  if (typeof localStorage === 'undefined') return DEFAULT_SET_ID
+  const sets = ensureQuizSets()
+  const saved = localStorage.getItem(ACTIVE_QUIZ_SET_STORAGE_KEY)
+  return sets.some((set) => set.id === saved) ? saved ?? DEFAULT_SET_ID : sets[0]?.id ?? DEFAULT_SET_ID
+}
+
+export function saveActiveQuizSetId(setId: string) {
+  localStorage.setItem(ACTIVE_QUIZ_SET_STORAGE_KEY, setId)
   window.dispatchEvent(new CustomEvent(QUIZ_BOARDS_EVENT))
 }
 
-export function resetQuizBoards() {
-  localStorage.removeItem(QUIZ_BOARDS_STORAGE_KEY)
+export function createQuizSet(title?: string) {
+  const now = new Date().toISOString()
+  const sets = ensureQuizSets()
+  const nextSet: QuizSetMeta = {
+    id: crypto.randomUUID(),
+    title: title?.trim() || `Quiz Set ${sets.length + 1}`,
+    createdAt: now,
+    updatedAt: now,
+  }
+  localStorage.setItem(QUIZ_SETS_STORAGE_KEY, JSON.stringify([...sets, nextSet]))
+  localStorage.setItem(quizSetBoardsKey(nextSet.id), JSON.stringify(defaultBoards))
+  saveActiveQuizSetId(nextSet.id)
+  return nextSet
+}
+
+export function deleteQuizSet(setId: string) {
+  const sets = ensureQuizSets()
+  if (sets.length <= 1) return sets
+  const nextSets = sets.filter((set) => set.id !== setId)
+  localStorage.setItem(QUIZ_SETS_STORAGE_KEY, JSON.stringify(nextSets))
+  localStorage.removeItem(quizSetBoardsKey(setId))
+  if (loadActiveQuizSetId() === setId) {
+    localStorage.setItem(ACTIVE_QUIZ_SET_STORAGE_KEY, nextSets[0]?.id ?? DEFAULT_SET_ID)
+  }
   window.dispatchEvent(new CustomEvent(QUIZ_BOARDS_EVENT))
+  return nextSets
+}
+
+export function loadQuizBoards(setId = loadActiveQuizSetId()): QuizBoard[] {
+  if (typeof localStorage === 'undefined') return defaultBoards
+  ensureQuizSets()
+  return readBoardsFromKey(quizSetBoardsKey(setId), defaultBoards)
+}
+
+export function saveQuizBoards(nextBoards: QuizBoard[], setId = loadActiveQuizSetId()) {
+  const sets = ensureQuizSets()
+  localStorage.setItem(quizSetBoardsKey(setId), JSON.stringify(nextBoards))
+  const now = new Date().toISOString()
+  localStorage.setItem(
+    QUIZ_SETS_STORAGE_KEY,
+    JSON.stringify(
+      sets.map((set) => (set.id === setId ? { ...set, updatedAt: now } : set)),
+    ),
+  )
+  window.dispatchEvent(new CustomEvent(QUIZ_BOARDS_EVENT))
+}
+
+export function resetQuizBoards(setId = loadActiveQuizSetId()) {
+  saveQuizBoards(defaultBoards, setId)
 }
 
 export const boards: QuizBoard[] = defaultBoards
