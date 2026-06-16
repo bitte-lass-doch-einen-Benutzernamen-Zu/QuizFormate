@@ -72,18 +72,25 @@ export default function QuizBoard({ quiz }: QuizBoardProps) {
             <div className="question-list">
               {category.questions.map((question) => {
                 const isPlayed = game.playedQuestionIds.includes(question.id)
+                const isEmpty =
+                  !question.question.trim() || !question.answer.trim()
                 return (
                   <div
-                    className={`point-tile-wrap${isPlayed ? ' played' : ''}`}
+                    className={`point-tile-wrap${isPlayed ? ' played' : ''}${isEmpty ? ' empty' : ''}`}
                     key={question.id}
                   >
                     <button
                       className="point-tile"
-                      disabled={isPlayed}
+                      disabled={isPlayed || isEmpty}
                       onClick={() => openQuestion(question.id)}
                       type="button"
                     >
-                      {isPlayed ? (
+                      {isEmpty ? (
+                        <>
+                          <strong>-</strong>
+                          <small>leer</small>
+                        </>
+                      ) : isPlayed ? (
                         <>
                           <span className="checkmark">✓</span>
                           <small>gespielt</small>

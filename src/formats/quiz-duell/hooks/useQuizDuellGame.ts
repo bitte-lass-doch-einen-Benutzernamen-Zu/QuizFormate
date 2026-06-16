@@ -40,7 +40,11 @@ export function useQuizDuellGame() {
   )
   const boardQuestions = useMemo(
     () =>
-      activeBoard.categories.flatMap((category) => category.questions),
+      activeBoard.categories
+        .flatMap((category) => category.questions)
+        .filter(
+          (question) => question.question.trim() && question.answer.trim(),
+        ),
     [activeBoard],
   )
   const playedQuestionIds = useMemo(

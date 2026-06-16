@@ -5,6 +5,7 @@ import {
   type TriviaCandidate,
 } from '../api/triviaApi'
 import {
+  clearQuizBoards,
   createQuizSet,
   deleteQuizSet,
   defaultBoards,
@@ -66,6 +67,30 @@ function slotLabel(board: QuizBoard, categoryIndex: number, questionIndex: numbe
   return `${board.title} / ${category.title} / ${question.points}`
 }
 
+function findNextEmptySlot(boards: QuizBoard[]) {
+  for (let boardIndex = 0; boardIndex < boards.length; boardIndex += 1) {
+    const board = boards[boardIndex]
+    for (
+      let categoryIndex = 0;
+      categoryIndex < board.categories.length;
+      categoryIndex += 1
+    ) {
+      const category = board.categories[categoryIndex]
+      for (
+        let questionIndex = 0;
+        questionIndex < category.questions.length;
+        questionIndex += 1
+      ) {
+        const question = category.questions[questionIndex]
+        if (!question.question.trim() || !question.answer.trim()) {
+          return { boardIndex, categoryIndex, questionIndex }
+        }
+      }
+    }
+  }
+  return null
+}
+
 export default function QuizQuestionStudioPage() {
   const [sets, setSets] = useState<QuizSetMeta[]>(loadQuizSets)
   const [openSetId, setOpenSetId] = useState(() => sets[0]?.id ?? '')
@@ -83,7 +108,7 @@ export default function QuizQuestionStudioPage() {
   const [loadedKeys, setLoadedKeys] = useState<string[]>([])
   const [selectedCandidateId, setSelectedCandidateId] = useState('')
   const [draft, setDraft] = useState<Draft>(emptyDraft)
-  const [selectedSlot, setSelectedSlot] = useState('0:0:0')
+  const [selectedSlot, setSelectedSlot] = useState('auto')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const boards = boardsBySet[openSetId] ?? []
@@ -106,7 +131,7 @@ export default function QuizQuestionStudioPage() {
     }
     setOpenSetId(setId)
     saveActiveQuizSetId(setId)
-    setSelectedSlot('0:0:0')
+    setSelectedSlot('auto')
     setBoardsBySet((current) =>
       current[setId]
         ? current
@@ -122,7 +147,7 @@ export default function QuizQuestionStudioPage() {
       [nextSet.id]: cloneBoards(loadQuizBoards(nextSet.id)),
     }))
     setOpenSetId(nextSet.id)
-    setSelectedSlot('0:0:0')
+    setSelectedSlot('auto')
   }
 
   const removeSet = (setId: string) => {
@@ -206,7 +231,19 @@ export default function QuizQuestionStudioPage() {
     source: Pick<QuizQuestion, 'question' | 'answer'> &
       Partial<Pick<QuizQuestion, 'image' | 'audio'>>,
   ) => {
-    const [boardIndex, categoryIndex, questionIndex] = selectedSlotParts
+    const target =
+      selectedSlot === 'auto'
+        ? findNextEmptySlot(boards)
+        : {
+            boardIndex: selectedSlotParts[0],
+            categoryIndex: selectedSlotParts[1],
+            questionIndex: selectedSlotParts[2],
+          }
+    if (!target) {
+      setMessage('Alle Slots sind voll. Waehle einen Zielslot zum Ueberschreiben.')
+      return
+    }
+    const { boardIndex, categoryIndex, questionIndex } = target
     const board = boards[boardIndex]
     if (!board || !source.question.trim() || !source.answer.trim()) return
 
@@ -245,6 +282,16 @@ export default function QuizQuestionStudioPage() {
     setMessage('Standardfragen wiederhergestellt.')
   }
 
+  const clearSet = () => {
+    if (!openSetId) return
+    if (!window.confirm('Alle Fragen in diesem Set leeren?')) return
+    const nextBoards = cloneBoards(clearQuizBoards(openSetId))
+    setBoardsBySet((current) => ({ ...current, [openSetId]: nextBoards }))
+    setSets(loadQuizSets())
+    setSelectedSlot('auto')
+    setMessage('Set geleert.')
+  }
+
   return (
     <main className="question-studio-page">
       <div className="background-grid" aria-hidden="true" />
@@ -267,6 +314,9 @@ export default function QuizQuestionStudioPage() {
           </div>
           <button onClick={restoreDefaults} type="button" disabled={!openSetId}>
             Standards ins offene Set
+          </button>
+          <button onClick={clearSet} type="button" disabled={!openSetId}>
+            Set leeren
           </button>
         </div>
         <div className="quiz-set-list">
@@ -409,6 +459,7 @@ export default function QuizQuestionStudioPage() {
                 onChange={(event) => setSelectedSlot(event.target.value)}
                 value={selectedSlot}
               >
+                <option value="auto">Naechster leerer Slot</option>
                 {boards.map((board, boardIndex) =>
                   board.categories.flatMap((category, categoryIndex) =>
                     category.questions.map((question, questionIndex) => (
@@ -438,16 +489,22 @@ export default function QuizQuestionStudioPage() {
             ) : (
               <>
                 {candidates.map((candidate) => (
-                  <button
+                  <article
                     className={candidate.id === selectedCandidateId ? 'selected' : ''}
                     key={candidate.id}
-                    onClick={() => setSelectedCandidateId(candidate.id)}
-                    type="button"
                   >
-                    <span>{candidate.category} / {candidate.difficulty}</span>
-                    <strong>{candidate.question}</strong>
-                    <small>{candidate.answer}</small>
-                  </button>
+                    <button
+                      onClick={() => setSelectedCandidateId(candidate.id)}
+                      type="button"
+                    >
+                      <span>{candidate.category} / {candidate.difficulty}</span>
+                      <strong>{candidate.question}</strong>
+                      <small>{candidate.answer}</small>
+                    </button>
+                    <button onClick={() => placeQuestion(candidate)} type="button">
+                      Einsetzen
+                    </button>
+                  </article>
                 ))}
                 <button
                   className="load-more-questions"
@@ -470,37 +527,57 @@ export default function QuizQuestionStudioPage() {
             <div>
               {board.categories.map((category, categoryIndex) => (
                 <section key={category.id}>
-                  <h3 style={{ color: category.color }}>{category.title}</h3>
-                  {category.questions.map((question, questionIndex) => (
-                    <details key={question.id}>
-                      <summary>
-                        <span>{question.points}</span>
-                        {question.question}
-                      </summary>
-                      <label>
-                        Frage
-                        <textarea
-                          onBlur={(event) =>
-                            editExistingQuestion(boardIndex, categoryIndex, questionIndex, {
-                              question: event.target.value,
-                            })
-                          }
-                          defaultValue={question.question}
-                        />
-                      </label>
-                      <label>
-                        Antwort
-                        <textarea
-                          onBlur={(event) =>
-                            editExistingQuestion(boardIndex, categoryIndex, questionIndex, {
-                              answer: event.target.value,
-                            })
-                          }
-                          defaultValue={question.answer}
-                        />
-                      </label>
-                    </details>
-                  ))}
+                  <h3 style={{ color: category.color }}>
+                    {category.title}
+                    <small>
+                      {
+                        category.questions.filter(
+                          (question) =>
+                            question.question.trim() &&
+                            question.answer.trim(),
+                        ).length
+                      } / {category.questions.length}
+                    </small>
+                  </h3>
+                  {category.questions.some(
+                    (question) =>
+                      question.question.trim() && question.answer.trim(),
+                  ) ? (
+                    category.questions.map((question, questionIndex) =>
+                      question.question.trim() && question.answer.trim() ? (
+                        <details key={question.id}>
+                          <summary>
+                            <span>{question.points}</span>
+                            {question.question}
+                          </summary>
+                          <label>
+                            Frage
+                            <textarea
+                              onBlur={(event) =>
+                                editExistingQuestion(boardIndex, categoryIndex, questionIndex, {
+                                  question: event.target.value,
+                                })
+                              }
+                              defaultValue={question.question}
+                            />
+                          </label>
+                          <label>
+                            Antwort
+                            <textarea
+                              onBlur={(event) =>
+                                editExistingQuestion(boardIndex, categoryIndex, questionIndex, {
+                                  answer: event.target.value,
+                                })
+                              }
+                              defaultValue={question.answer}
+                            />
+                          </label>
+                        </details>
+                      ) : null,
+                    )
+                  ) : (
+                    <p className="empty-category-note">Noch leer</p>
+                  )}
                 </section>
               ))}
             </div>

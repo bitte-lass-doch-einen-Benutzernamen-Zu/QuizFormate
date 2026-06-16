@@ -148,6 +148,22 @@ export const ACTIVE_QUIZ_SET_STORAGE_KEY = 'quiz-duell-active-set-v1'
 export const QUIZ_BOARDS_EVENT = 'quiz-duell-boards-updated'
 const DEFAULT_SET_ID = 'default'
 
+function createEmptyBoards(): QuizBoard[] {
+  return defaultBoards.map((board) => ({
+    ...board,
+    categories: board.categories.map((category) => ({
+      ...category,
+      questions: category.questions.map((question) => ({
+        ...question,
+        question: '',
+        answer: '',
+        image: undefined,
+        audio: undefined,
+      })),
+    })),
+  }))
+}
+
 function quizSetBoardsKey(setId: string) {
   return `quiz-duell-set-boards-v1:${setId}`
 }
@@ -267,7 +283,7 @@ export function createQuizSet(title?: string) {
     updatedAt: now,
   }
   localStorage.setItem(QUIZ_SETS_STORAGE_KEY, JSON.stringify([...sets, nextSet]))
-  localStorage.setItem(quizSetBoardsKey(nextSet.id), JSON.stringify(defaultBoards))
+  localStorage.setItem(quizSetBoardsKey(nextSet.id), JSON.stringify(createEmptyBoards()))
   saveActiveQuizSetId(nextSet.id)
   return nextSet
 }
@@ -306,6 +322,12 @@ export function saveQuizBoards(nextBoards: QuizBoard[], setId = loadActiveQuizSe
 
 export function resetQuizBoards(setId = loadActiveQuizSetId()) {
   saveQuizBoards(defaultBoards, setId)
+}
+
+export function clearQuizBoards(setId = loadActiveQuizSetId()) {
+  const nextBoards = createEmptyBoards()
+  saveQuizBoards(nextBoards, setId)
+  return nextBoards
 }
 
 export const boards: QuizBoard[] = defaultBoards

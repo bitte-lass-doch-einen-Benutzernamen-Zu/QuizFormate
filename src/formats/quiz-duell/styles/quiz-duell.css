@@ -457,6 +457,7 @@
 }
 
 .point-tile-wrap.played .point-tile { cursor: not-allowed; opacity: .34; filter: grayscale(.8); background: rgba(12, 10, 17, .72); }
+.point-tile-wrap.empty .point-tile { cursor: not-allowed; opacity: .24; filter: grayscale(1); background: rgba(12, 10, 17, .52); }
 .restore-question {
   position: absolute;
   z-index: 3;
@@ -1070,6 +1071,11 @@
   margin-bottom: 10px;
 }
 
+.quiz-set-manager-head > div:last-child {
+  display: flex;
+  gap: 7px;
+}
+
 .quiz-set-manager-head > div {
   display: grid;
   gap: 3px;
@@ -1348,20 +1354,40 @@
 
 .question-candidate-list > p { color: #716879; }
 
-.question-candidate-list button {
+.question-candidate-list article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  border: 1px solid rgba(167, 139, 250, .16);
+  background: rgba(255, 255, 255, .025);
+}
+
+.question-candidate-list article.selected {
+  border-color: rgba(0, 245, 212, .5);
+  background: rgba(0, 245, 212, .06);
+}
+
+.question-candidate-list article > button:first-child {
   display: grid;
   gap: 5px;
   cursor: pointer;
   padding: 12px;
-  border: 1px solid rgba(167, 139, 250, .16);
+  border: 0;
   color: #fff;
-  background: rgba(255, 255, 255, .025);
+  background: transparent;
   text-align: left;
 }
 
-.question-candidate-list button.selected {
-  border-color: rgba(0, 245, 212, .5);
+.question-candidate-list article > button:last-child {
+  cursor: pointer;
+  min-width: 104px;
+  border: 0;
+  border-left: 1px solid rgba(0, 245, 212, .22);
+  color: #00f5d4;
   background: rgba(0, 245, 212, .06);
+  font-size: .62rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .question-candidate-list .load-more-questions {
@@ -1395,6 +1421,26 @@
   margin: 0 0 10px;
   font: 800 1rem var(--font-display);
   text-transform: uppercase;
+}
+
+.question-board-editor h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.question-board-editor h3 small {
+  color: #716879;
+  font-size: .62rem;
+}
+
+.empty-category-note {
+  margin: 0 0 10px;
+  padding: 10px;
+  border: 1px dashed rgba(167, 139, 250, .16);
+  color: #716879;
+  font-size: .72rem;
 }
 
 .question-board-editor > article > div {
