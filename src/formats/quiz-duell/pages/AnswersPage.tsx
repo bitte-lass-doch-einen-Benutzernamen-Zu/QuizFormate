@@ -1,12 +1,38 @@
-import { allQuestions, boards } from '../data/questions'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  QUIZ_BOARDS_EVENT,
+  QUIZ_BOARDS_STORAGE_KEY,
+  loadQuizBoards,
+} from '../data/questions'
 import { useGameState } from '../state/gameState'
 import '../styles/answers.css'
 
 export default function AnswersPage() {
   const [game] = useGameState()
+  const [boards, setBoards] = useState(loadQuizBoards)
+  const allQuestions = useMemo(
+    () =>
+      boards.flatMap((board) =>
+        board.categories.flatMap((category) => category.questions),
+      ),
+    [boards],
+  )
   const activeQuestion = allQuestions.find(
     (question) => question.id === game.activeQuestionId,
   )
+
+  useEffect(() => {
+    const refreshBoards = () => setBoards(loadQuizBoards())
+    const receiveStorage = (event: StorageEvent) => {
+      if (event.key === QUIZ_BOARDS_STORAGE_KEY) refreshBoards()
+    }
+    window.addEventListener(QUIZ_BOARDS_EVENT, refreshBoards)
+    window.addEventListener('storage', receiveStorage)
+    return () => {
+      window.removeEventListener(QUIZ_BOARDS_EVENT, refreshBoards)
+      window.removeEventListener('storage', receiveStorage)
+    }
+  }, [])
 
   return (
     <main className="answers-page">

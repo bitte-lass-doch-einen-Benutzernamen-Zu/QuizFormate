@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  deleteSavedMorph,
   generateMorph,
   hasMorphOpenAIKey,
   loadSavedMorphs,
@@ -295,6 +296,31 @@ export default function MorphDuellPage() {
     }
   }
 
+  const removeSavedMorph = async (morph: SavedMorph) => {
+    if (
+      !window.confirm(
+        `Morph aus ${morph.firstChampion.name} + ${morph.secondChampion.name} wirklich loeschen?`,
+      )
+    ) {
+      return
+    }
+    setQuizSaving(true)
+    setQuizMessage('')
+    try {
+      await deleteSavedMorph(morph)
+      await refreshSavedMorphs()
+      setQuizMessage('Morphkarte geloescht.')
+    } catch (reason) {
+      setQuizMessage(
+        reason instanceof Error
+          ? reason.message
+          : 'Die Morphkarte konnte nicht geloescht werden.',
+      )
+    } finally {
+      setQuizSaving(false)
+    }
+  }
+
   return (
     <main className="morph-library-page">
       <div className="formats-grid-bg" aria-hidden="true" />
@@ -563,8 +589,9 @@ export default function MorphDuellPage() {
                   <div className="morph-quiz-card-image">
                     <img
                       alt={`Morph aus ${morph.firstChampion.name} und ${morph.secondChampion.name}`}
+                      decoding="async"
                       loading="lazy"
-                      src={morph.imageUrl}
+                      src={morph.imageThumbUrl}
                     />
                     {morph.inQuiz && <b>{quizIndex + 1}</b>}
                   </div>
@@ -603,6 +630,14 @@ export default function MorphDuellPage() {
                         </button>
                       </>
                     )}
+                    <button
+                      className="danger"
+                      disabled={quizSaving}
+                      onClick={() => void removeSavedMorph(morph)}
+                      type="button"
+                    >
+                      Loeschen
+                    </button>
                   </div>
                 </article>
               )

@@ -146,6 +146,8 @@ export async function saveVoiceQuiz(questions: VoiceQuizQuestion[]) {
           quiz_position: position >= 0 ? position : null,
         })
         .eq('id', question.id)
+        .select('id')
+        .single()
     }),
   )
   const failed = results.find((result) => result.error)

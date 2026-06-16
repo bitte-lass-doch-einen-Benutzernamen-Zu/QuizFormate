@@ -102,6 +102,12 @@
   text-transform: uppercase;
 }
 
+.voice-studio-header > a.disabled {
+  cursor: not-allowed;
+  opacity: .45;
+  pointer-events: none;
+}
+
 .voice-source-panel {
   display: grid;
   grid-template-columns: minmax(310px, .65fr) minmax(0, 1.35fr);
@@ -230,6 +236,7 @@
 .voice-library-head h2 { margin: 5px 0 0; font: italic 900 clamp(1.8rem, 4vw, 3rem) var(--font-display); text-transform: uppercase; }
 .voice-library-head > div:last-child { display: grid; gap: 7px; text-align: right; }
 .voice-library-head strong { color: #aaa2b6; font-size: .68rem; }
+.voice-library-head small { color: #ffcf4a; font-size: .6rem; text-transform: uppercase; }
 .voice-library-head button:disabled { cursor: wait; opacity: .45; }
 .voice-message { color: #4cc9f0; font-size: .75rem; }
 .voice-empty { padding: 48px; border: 1px dashed rgba(167, 139, 250, .2); color: #716879; text-align: center; }

@@ -20,6 +20,8 @@ export type SavedMorph = GeneratedMorph & {
   createdAt: string
   inQuiz: boolean
   quizPosition: number | null
+  imagePath: string
+  imageThumbUrl: string
 }
 
 type MorphGenerationRow = {
@@ -110,23 +112,39 @@ export async function loadSavedMorphs() {
 
   if (error) throw error
 
-  return (data as MorphGenerationRow[]).map((row): SavedMorph => ({
-    id: row.id,
-    imageUrl: client.storage.from(MORPH_BUCKET).getPublicUrl(row.image_path).data
-      .publicUrl,
-    difficulty: row.difficulty,
-    firstChampion: {
-      id: row.first_champion_id,
-      name: row.first_champion_name,
-    },
-    secondChampion: {
-      id: row.second_champion_id,
-      name: row.second_champion_name,
-    },
-    createdAt: row.created_at,
-    inQuiz: row.in_quiz,
-    quizPosition: row.quiz_position,
-  }))
+  return (data as MorphGenerationRow[]).map((row): SavedMorph => {
+    const bucket = client.storage.from(MORPH_BUCKET)
+    return {
+      id: row.id,
+      imagePath: row.image_path,
+      imageUrl: bucket.getPublicUrl(row.image_path).data.publicUrl,
+      imageThumbUrl: bucket.getPublicUrl(row.image_path, {
+        transform: { width: 420, quality: 55 },
+      }).data.publicUrl,
+      difficulty: row.difficulty,
+      firstChampion: {
+        id: row.first_champion_id,
+        name: row.first_champion_name,
+      },
+      secondChampion: {
+        id: row.second_champion_id,
+        name: row.second_champion_name,
+      },
+      createdAt: row.created_at,
+      inQuiz: row.in_quiz,
+      quizPosition: row.quiz_position,
+    }
+  })
+}
+
+export async function deleteSavedMorph(morph: SavedMorph) {
+  const client = await getSupabaseClient()
+  const { error } = await client
+    .from('morph_generations')
+    .delete()
+    .eq('id', morph.id)
+  if (error) throw error
+  await client.storage.from(MORPH_BUCKET).remove([morph.imagePath])
 }
 
 export async function saveMorphQuiz(morphs: SavedMorph[]) {

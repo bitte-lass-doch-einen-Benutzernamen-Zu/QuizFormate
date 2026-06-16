@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { allQuestions, boards } from '../data/questions'
+import {
+  QUIZ_BOARDS_EVENT,
+  QUIZ_BOARDS_STORAGE_KEY,
+  loadQuizBoards,
+} from '../data/questions'
 import {
   createTeam,
   initialGame,
@@ -17,18 +21,22 @@ function addPlayedQuestion(questionIds: string[], questionId: string) {
 
 export function useQuizDuellGame() {
   const [game, setGame] = useGameState()
+  const [boards, setBoards] = useState(loadQuizBoards)
   const [teamManagerOpen, setTeamManagerOpen] = useState(false)
   const [memberDrafts, setMemberDrafts] = useState<Record<string, string>>({})
 
   const activeTeam = game.teams[game.activeTeamIndex] ?? game.teams[0]
   const activeBoard = useMemo(
     () => boards.find((board) => board.id === game.activeBoardId) ?? boards[0],
-    [game.activeBoardId],
+    [boards, game.activeBoardId],
   )
   const activeQuestion = useMemo(
     () =>
-      allQuestions.find((question) => question.id === game.activeQuestionId),
-    [game.activeQuestionId],
+      boards
+        .flatMap((board) => board.categories)
+        .flatMap((category) => category.questions)
+        .find((question) => question.id === game.activeQuestionId),
+    [boards, game.activeQuestionId],
   )
   const boardQuestions = useMemo(
     () =>
@@ -55,6 +63,19 @@ export function useQuizDuellGame() {
       standings: [...game.teams].sort((a, b) => b.score - a.score),
     }
   }, [game.teams])
+
+  useEffect(() => {
+    const refreshBoards = () => setBoards(loadQuizBoards())
+    const receiveStorage = (event: StorageEvent) => {
+      if (event.key === QUIZ_BOARDS_STORAGE_KEY) refreshBoards()
+    }
+    window.addEventListener(QUIZ_BOARDS_EVENT, refreshBoards)
+    window.addEventListener('storage', receiveStorage)
+    return () => {
+      window.removeEventListener(QUIZ_BOARDS_EVENT, refreshBoards)
+      window.removeEventListener('storage', receiveStorage)
+    }
+  }, [])
 
   useEffect(() => {
     if (!game.feedback) return
@@ -299,6 +320,7 @@ export function useQuizDuellGame() {
 
   return {
     game,
+    boards,
     updateGame,
     activeTeam,
     activeBoard,

@@ -133,7 +133,73 @@ const boardTwo: QuizBoard = {
   ],
 }
 
-export const boards: QuizBoard[] = [boardOne, boardTwo]
-export const allQuestions = boards.flatMap((board) =>
+export const defaultBoards: QuizBoard[] = [boardOne, boardTwo]
+
+export const QUIZ_BOARDS_STORAGE_KEY = 'quiz-duell-boards-v1'
+export const QUIZ_BOARDS_EVENT = 'quiz-duell-boards-updated'
+
+function isQuestion(value: unknown): value is QuizQuestion {
+  if (!value || typeof value !== 'object') return false
+  const question = value as Partial<QuizQuestion>
+  return (
+    typeof question.id === 'string' &&
+    typeof question.category === 'string' &&
+    typeof question.points === 'number' &&
+    typeof question.question === 'string' &&
+    typeof question.answer === 'string'
+  )
+}
+
+function isCategory(value: unknown): value is QuizCategory {
+  if (!value || typeof value !== 'object') return false
+  const category = value as Partial<QuizCategory>
+  return (
+    typeof category.id === 'string' &&
+    typeof category.title === 'string' &&
+    typeof category.color === 'string' &&
+    Array.isArray(category.questions) &&
+    category.questions.every(isQuestion)
+  )
+}
+
+function isBoard(value: unknown): value is QuizBoard {
+  if (!value || typeof value !== 'object') return false
+  const board = value as Partial<QuizBoard>
+  return (
+    typeof board.id === 'string' &&
+    typeof board.title === 'string' &&
+    typeof board.subtitle === 'string' &&
+    Array.isArray(board.categories) &&
+    board.categories.every(isCategory)
+  )
+}
+
+export function loadQuizBoards(): QuizBoard[] {
+  if (typeof localStorage === 'undefined') return defaultBoards
+  try {
+    const saved = localStorage.getItem(QUIZ_BOARDS_STORAGE_KEY)
+    if (!saved) return defaultBoards
+    const parsed = JSON.parse(saved) as unknown
+    return Array.isArray(parsed) && parsed.every(isBoard)
+      ? parsed
+      : defaultBoards
+  } catch {
+    localStorage.removeItem(QUIZ_BOARDS_STORAGE_KEY)
+    return defaultBoards
+  }
+}
+
+export function saveQuizBoards(nextBoards: QuizBoard[]) {
+  localStorage.setItem(QUIZ_BOARDS_STORAGE_KEY, JSON.stringify(nextBoards))
+  window.dispatchEvent(new CustomEvent(QUIZ_BOARDS_EVENT))
+}
+
+export function resetQuizBoards() {
+  localStorage.removeItem(QUIZ_BOARDS_STORAGE_KEY)
+  window.dispatchEvent(new CustomEvent(QUIZ_BOARDS_EVENT))
+}
+
+export const boards: QuizBoard[] = defaultBoards
+export const allQuestions = defaultBoards.flatMap((board) =>
   board.categories.flatMap((category) => category.questions),
 )

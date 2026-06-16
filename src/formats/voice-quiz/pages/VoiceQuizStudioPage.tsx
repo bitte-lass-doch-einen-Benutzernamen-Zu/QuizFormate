@@ -21,6 +21,7 @@ export default function VoiceQuizStudioPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [dirty, setDirty] = useState(false)
 
   const refreshQuestions = async () => {
     setQuestions(await loadVoiceQuestions())
@@ -74,6 +75,7 @@ export default function VoiceQuizStudioPage() {
     try {
       await action()
       await refreshQuestions()
+      setDirty(false)
       setMessage(success)
     } catch (reason) {
       setMessage(
@@ -117,6 +119,7 @@ export default function VoiceQuizStudioPage() {
           : question,
       )
     })
+    setDirty(true)
     setMessage('')
   }
 
@@ -142,6 +145,7 @@ export default function VoiceQuizStudioPage() {
         quizPosition: positions.get(question.id) ?? question.quizPosition,
       })),
     )
+    setDirty(true)
   }
 
   if (loading) {
@@ -163,7 +167,13 @@ export default function VoiceQuizStudioPage() {
             zusammen.
           </p>
         </div>
-        <a href="/voicequiz/play">Quiz starten</a>
+        <a
+          aria-disabled={dirty || quizQuestions.length === 0}
+          className={dirty || quizQuestions.length === 0 ? 'disabled' : ''}
+          href={dirty || quizQuestions.length === 0 ? undefined : '/voicequiz/play'}
+        >
+          Quiz starten
+        </a>
       </header>
 
       <section className="voice-source-panel">
@@ -237,6 +247,7 @@ export default function VoiceQuizStudioPage() {
           </div>
           <div>
             <strong>{quizQuestions.length} ausgewählt</strong>
+            {dirty && <small>Ungespeicherte Auswahl</small>}
             <button
               disabled={busy}
               onClick={() =>

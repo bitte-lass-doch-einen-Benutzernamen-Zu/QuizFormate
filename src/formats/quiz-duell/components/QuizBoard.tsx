@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react'
-import { boards } from '../data/questions'
 import type { QuizDuellController } from '../hooks/useQuizDuellGame'
 import TimerPanel from './TimerPanel'
 
@@ -10,6 +9,7 @@ type QuizBoardProps = {
 export default function QuizBoard({ quiz }: QuizBoardProps) {
   const {
     game,
+    boards,
     updateGame,
     activeBoard,
     playedOnBoard,
@@ -44,6 +44,7 @@ export default function QuizBoard({ quiz }: QuizBoardProps) {
         <div className="board-tools">
           <TimerPanel />
           <a href="/">Formate</a>
+          <a href="/quizduell/studio">Fragen-Studio</a>
           <a href="/answers" target="_blank" rel="noreferrer">
             Lösungen öffnen
           </a>
