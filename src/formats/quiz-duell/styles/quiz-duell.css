@@ -1103,6 +1103,53 @@
   text-transform: uppercase;
 }
 
+.trivia-category-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.trivia-category-picker button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  padding: 9px;
+  border: 1px solid rgba(167, 139, 250, .18);
+  color: #aaa2b6;
+  background: rgba(167, 139, 250, .045);
+  text-align: left;
+}
+
+.trivia-category-picker button.selected {
+  border-color: rgba(0, 245, 212, .5);
+  color: #fff;
+  background: rgba(0, 245, 212, .08);
+}
+
+.trivia-category-picker button span {
+  overflow: hidden;
+  font-size: .62rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.trivia-category-picker button small {
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgba(0, 245, 212, .25);
+  border-radius: 50%;
+  color: #00f5d4;
+  font-size: .58rem;
+}
+
 .suggestion-size-picker > div {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1203,6 +1250,13 @@
 .question-candidate-list button.selected {
   border-color: rgba(0, 245, 212, .5);
   background: rgba(0, 245, 212, .06);
+}
+
+.question-candidate-list .load-more-questions {
+  justify-content: center;
+  border-color: rgba(255, 207, 74, .38);
+  color: #ffcf4a;
+  text-align: center;
 }
 
 .question-candidate-list span {

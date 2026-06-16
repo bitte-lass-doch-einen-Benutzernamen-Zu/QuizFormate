@@ -39,6 +39,8 @@ const difficulties: Array<{
   },
 ]
 
+const morphPageSize = 12
+
 export default function MorphDuellPage() {
   const [champions, setChampions] = useState<LeagueChampion[]>([])
   const [version, setVersion] = useState('')
@@ -59,6 +61,7 @@ export default function MorphDuellPage() {
   const [savedMorphsLoading, setSavedMorphsLoading] = useState(true)
   const [quizSaving, setQuizSaving] = useState(false)
   const [quizMessage, setQuizMessage] = useState('')
+  const [visibleMorphCount, setVisibleMorphCount] = useState(morphPageSize)
 
   const refreshSavedMorphs = useCallback(async () => {
     setSavedMorphsLoading(true)
@@ -235,6 +238,23 @@ export default function MorphDuellPage() {
             (right.quizPosition ?? Number.MAX_SAFE_INTEGER),
         ),
     [savedMorphs],
+  )
+
+  const displayMorphs = useMemo(
+    () =>
+      [...savedMorphs].sort((left, right) => {
+        if (left.inQuiz !== right.inQuiz) return left.inQuiz ? -1 : 1
+        return (
+          new Date(right.createdAt).getTime() -
+          new Date(left.createdAt).getTime()
+        )
+      }),
+    [savedMorphs],
+  )
+
+  const visibleMorphs = useMemo(
+    () => displayMorphs.slice(0, visibleMorphCount),
+    [displayMorphs, visibleMorphCount],
   )
 
   const toggleQuizMorph = (morphId: string) => {
@@ -576,8 +596,9 @@ export default function MorphDuellPage() {
             Erzeuge oben deine erste KI-Fusion. Sie erscheint anschließend hier.
           </div>
         ) : (
-          <div className="morph-quiz-card-grid">
-            {savedMorphs.map((morph) => {
+          <>
+            <div className="morph-quiz-card-grid">
+              {visibleMorphs.map((morph) => {
               const quizIndex = quizMorphs.findIndex(
                 (item) => item.id === morph.id,
               )
@@ -641,8 +662,20 @@ export default function MorphDuellPage() {
                   </div>
                 </article>
               )
-            })}
-          </div>
+              })}
+            </div>
+            {visibleMorphs.length < displayMorphs.length && (
+              <button
+                className="morph-load-more"
+                onClick={() =>
+                  setVisibleMorphCount((current) => current + morphPageSize)
+                }
+                type="button"
+              >
+                Mehr Morphs anzeigen ({displayMorphs.length - visibleMorphs.length})
+              </button>
+            )}
+          </>
         )}
       </section>
 

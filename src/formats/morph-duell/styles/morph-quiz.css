@@ -167,6 +167,20 @@
   background: rgba(255, 120, 151, .06);
 }
 
+.morph-load-more {
+  display: block;
+  width: min(100%, 420px);
+  cursor: pointer;
+  margin: 16px auto 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 245, 212, .45);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, .08);
+  font-size: .68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .morph-quiz-page,
 .morph-quiz-status {
   min-height: 100vh;

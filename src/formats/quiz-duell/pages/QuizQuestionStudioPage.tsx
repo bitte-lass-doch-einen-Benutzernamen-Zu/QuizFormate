@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   loadTriviaQuestions,
   triviaCategories,
@@ -21,7 +21,7 @@ const difficulties = [
   { value: 'hard', label: 'Schwer' },
 ]
 
-const suggestionSizes = [12, 24, 48]
+const questionBatchSize = 24
 
 const emptyDraft = {
   question: '',
@@ -63,38 +63,56 @@ function slotLabel(board: QuizBoard, categoryIndex: number, questionIndex: numbe
 
 export default function QuizQuestionStudioPage() {
   const [boards, setBoards] = useState(() => cloneBoards(loadQuizBoards()))
-  const [categoryId, setCategoryId] = useState('any')
+  const [categoryId, setCategoryId] = useState('general_knowledge')
   const [difficulty, setDifficulty] = useState('any')
-  const [suggestionSize, setSuggestionSize] = useState(24)
-  const [candidates, setCandidates] = useState<TriviaCandidate[]>([])
+  const [candidatesByCategory, setCandidatesByCategory] = useState<
+    Record<string, TriviaCandidate[]>
+  >({})
+  const [loadedKeys, setLoadedKeys] = useState<string[]>([])
   const [selectedCandidateId, setSelectedCandidateId] = useState('')
   const [draft, setDraft] = useState<Draft>(emptyDraft)
   const [selectedSlot, setSelectedSlot] = useState('0:0:0')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const candidates = candidatesByCategory[categoryId] ?? []
   const selectedCandidate = candidates.find(
     (candidate) => candidate.id === selectedCandidateId,
-  )
+  ) ?? candidates[0]
 
   const selectedSlotParts = useMemo(
     () => selectedSlot.split(':').map((value) => Number(value)),
     [selectedSlot],
   )
+  const activeLoadKey = `${categoryId}:${difficulty}`
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = useCallback(async (append = false) => {
     if (loading) return
     setLoading(true)
     setMessage('')
+    setLoadedKeys((current) =>
+      current.includes(activeLoadKey) ? current : [...current, activeLoadKey],
+    )
     try {
       const result = await loadTriviaQuestions({
-        limit: suggestionSize,
+        limit: questionBatchSize,
         categoryId,
         difficulty,
       })
-      setCandidates(result)
-      setSelectedCandidateId(result[0]?.id ?? '')
-      setMessage(`${result.length} Fragen geladen.`)
+      setCandidatesByCategory((current) => {
+        const existing = append ? current[categoryId] ?? [] : []
+        const merged = [...existing]
+        for (const question of result) {
+          if (!merged.some((item) => item.id === question.id)) {
+            merged.push(question)
+          }
+        }
+        return { ...current, [categoryId]: merged }
+      })
+      const categoryName =
+        triviaCategories.find((category) => category.id === categoryId)?.name ??
+        'die Kategorie'
+      setMessage(`${result.length} Fragen fuer ${categoryName} geladen.`)
     } catch (reason) {
       setMessage(
         reason instanceof Error
@@ -104,7 +122,17 @@ export default function QuizQuestionStudioPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeLoadKey, categoryId, difficulty, loading])
+
+  useEffect(() => {
+    if (candidates.length || loading || loadedKeys.includes(activeLoadKey)) {
+      return
+    }
+    const timer = window.setTimeout(() => {
+      void fetchQuestions(false)
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [activeLoadKey, candidates.length, fetchQuestions, loadedKeys, loading])
 
   const updateBoards = (nextBoards: QuizBoard[], success: string) => {
     setBoards(nextBoards)
@@ -173,25 +201,29 @@ export default function QuizQuestionStudioPage() {
             <span>The Trivia API</span>
             <h2>Fragen importieren</h2>
           </div>
-          <label>
-            Kategorie
-            <select
-              disabled={loading}
-              onChange={(event) => setCategoryId(event.target.value)}
-              value={categoryId}
-            >
-              {triviaCategories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="trivia-category-picker">
+            {triviaCategories.map((category) => (
+              <button
+                className={category.id === categoryId ? 'selected' : ''}
+                disabled={loading}
+                key={category.id}
+                onClick={() => setCategoryId(category.id)}
+                type="button"
+              >
+                <span>{category.name}</span>
+                <small>{candidatesByCategory[category.id]?.length ?? 0}</small>
+              </button>
+            ))}
+          </div>
           <label>
             Schwierigkeit
             <select
               disabled={loading}
-              onChange={(event) => setDifficulty(event.target.value)}
+              onChange={(event) => {
+                setDifficulty(event.target.value)
+                setCandidatesByCategory({})
+                setLoadedKeys([])
+              }}
               value={difficulty}
             >
               {difficulties.map((option) => (
@@ -201,24 +233,8 @@ export default function QuizQuestionStudioPage() {
               ))}
             </select>
           </label>
-          <div className="suggestion-size-picker">
-            <span>Vorschlaege</span>
-            <div>
-              {suggestionSizes.map((size) => (
-                <button
-                  className={suggestionSize === size ? 'selected' : ''}
-                  disabled={loading}
-                  key={size}
-                  onClick={() => setSuggestionSize(size)}
-                  type="button"
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-          <button disabled={loading} onClick={fetchQuestions} type="button">
-            {loading ? 'Laedt...' : 'Fragen laden'}
+          <button disabled={loading} onClick={() => fetchQuestions(false)} type="button">
+            {loading ? 'Laedt...' : candidates.length ? 'Neu laden' : 'Kategorie laden'}
           </button>
           <div className="manual-question-box">
             <span>Manuell</span>
@@ -300,20 +316,30 @@ export default function QuizQuestionStudioPage() {
 
           <div className="question-candidate-list">
             {candidates.length === 0 ? (
-              <p>Lade links eine Kategorie oder erstelle direkt eine manuelle Frage.</p>
+              <p>Waehle links eine Kategorie und lade die ersten Fragen. Andere Kategorien bleiben ausgeblendet.</p>
             ) : (
-              candidates.map((candidate) => (
+              <>
+                {candidates.map((candidate) => (
+                  <button
+                    className={candidate.id === selectedCandidateId ? 'selected' : ''}
+                    key={candidate.id}
+                    onClick={() => setSelectedCandidateId(candidate.id)}
+                    type="button"
+                  >
+                    <span>{candidate.category} / {candidate.difficulty}</span>
+                    <strong>{candidate.question}</strong>
+                    <small>{candidate.answer}</small>
+                  </button>
+                ))}
                 <button
-                  className={candidate.id === selectedCandidateId ? 'selected' : ''}
-                  key={candidate.id}
-                  onClick={() => setSelectedCandidateId(candidate.id)}
+                  className="load-more-questions"
+                  disabled={loading}
+                  onClick={() => fetchQuestions(true)}
                   type="button"
                 >
-                  <span>{candidate.category} / {candidate.difficulty}</span>
-                  <strong>{candidate.question}</strong>
-                  <small>{candidate.answer}</small>
+                  {loading ? 'Laedt...' : 'Mehr Fragen laden'}
                 </button>
-              ))
+              </>
             )}
           </div>
         </section>
