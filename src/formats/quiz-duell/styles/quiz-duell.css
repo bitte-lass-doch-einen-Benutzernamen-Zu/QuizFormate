@@ -1092,7 +1092,8 @@
 }
 
 .question-import-panel label,
-.manual-question-box {
+.manual-question-box,
+.suggestion-size-picker {
   display: grid;
   gap: 6px;
   color: #8f879f;
@@ -1100,6 +1101,24 @@
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
+}
+
+.suggestion-size-picker > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.suggestion-size-picker button {
+  border-color: rgba(167, 139, 250, .24);
+  color: #aaa2b6;
+  background: rgba(167, 139, 250, .06);
+}
+
+.suggestion-size-picker button.selected {
+  border-color: rgba(0, 245, 212, .5);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, .09);
 }
 
 .question-import-panel input,

@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
-  loadOpenTriviaCategories,
-  loadOpenTriviaQuestions,
-  type OpenTriviaCategory,
-  type OpenTriviaQuestion,
-} from '../api/openTrivia'
+  loadTriviaQuestions,
+  triviaCategories,
+  type TriviaCandidate,
+} from '../api/triviaApi'
 import {
   defaultBoards,
   loadQuizBoards,
@@ -21,6 +20,8 @@ const difficulties = [
   { value: 'medium', label: 'Mittel' },
   { value: 'hard', label: 'Schwer' },
 ]
+
+const suggestionSizes = [12, 24, 48]
 
 const emptyDraft = {
   question: '',
@@ -62,11 +63,10 @@ function slotLabel(board: QuizBoard, categoryIndex: number, questionIndex: numbe
 
 export default function QuizQuestionStudioPage() {
   const [boards, setBoards] = useState(() => cloneBoards(loadQuizBoards()))
-  const [categories, setCategories] = useState<OpenTriviaCategory[]>([])
-  const [categoryId, setCategoryId] = useState<number | null>(null)
+  const [categoryId, setCategoryId] = useState('any')
   const [difficulty, setDifficulty] = useState('any')
-  const [amount, setAmount] = useState(12)
-  const [candidates, setCandidates] = useState<OpenTriviaQuestion[]>([])
+  const [suggestionSize, setSuggestionSize] = useState(24)
+  const [candidates, setCandidates] = useState<TriviaCandidate[]>([])
   const [selectedCandidateId, setSelectedCandidateId] = useState('')
   const [draft, setDraft] = useState<Draft>(emptyDraft)
   const [selectedSlot, setSelectedSlot] = useState('0:0:0')
@@ -82,28 +82,13 @@ export default function QuizQuestionStudioPage() {
     [selectedSlot],
   )
 
-  useEffect(() => {
-    loadOpenTriviaCategories()
-      .then((items) => {
-        setCategories(items)
-        setCategoryId(items[0]?.id ?? null)
-      })
-      .catch((reason) =>
-        setMessage(
-          reason instanceof Error
-            ? reason.message
-            : 'Kategorien konnten nicht geladen werden.',
-        ),
-      )
-  }, [])
-
   const fetchQuestions = async () => {
-    if (!categoryId || loading) return
+    if (loading) return
     setLoading(true)
     setMessage('')
     try {
-      const result = await loadOpenTriviaQuestions({
-        amount,
+      const result = await loadTriviaQuestions({
+        limit: suggestionSize,
         categoryId,
         difficulty,
       })
@@ -185,17 +170,17 @@ export default function QuizQuestionStudioPage() {
       <section className="question-studio-layout">
         <aside className="question-import-panel">
           <div>
-            <span>Open Trivia DB</span>
+            <span>The Trivia API</span>
             <h2>Fragen importieren</h2>
           </div>
           <label>
             Kategorie
             <select
-              disabled={!categories.length || loading}
-              onChange={(event) => setCategoryId(Number(event.target.value))}
-              value={categoryId ?? ''}
+              disabled={loading}
+              onChange={(event) => setCategoryId(event.target.value)}
+              value={categoryId}
             >
-              {categories.map((category) => (
+              {triviaCategories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -216,17 +201,23 @@ export default function QuizQuestionStudioPage() {
               ))}
             </select>
           </label>
-          <label>
-            Anzahl
-            <input
-              max={30}
-              min={1}
-              onChange={(event) => setAmount(Number(event.target.value))}
-              type="number"
-              value={amount}
-            />
-          </label>
-          <button disabled={!categoryId || loading} onClick={fetchQuestions} type="button">
+          <div className="suggestion-size-picker">
+            <span>Vorschlaege</span>
+            <div>
+              {suggestionSizes.map((size) => (
+                <button
+                  className={suggestionSize === size ? 'selected' : ''}
+                  disabled={loading}
+                  key={size}
+                  onClick={() => setSuggestionSize(size)}
+                  type="button"
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button disabled={loading} onClick={fetchQuestions} type="button">
             {loading ? 'Laedt...' : 'Fragen laden'}
           </button>
           <div className="manual-question-box">
