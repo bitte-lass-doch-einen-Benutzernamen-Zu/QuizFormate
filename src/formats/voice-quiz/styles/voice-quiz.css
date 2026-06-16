@@ -294,8 +294,11 @@
 
 .voice-score-panel { display: grid; gap: 7px; max-height: 240px; padding: 10px; overflow-y: auto; border: 1px solid rgba(167, 139, 250, .16); }
 .voice-score-panel > div:first-child { display: grid; gap: 2px; }
-.voice-score-panel .score-reset-button { cursor: pointer; padding: 9px 10px; border: 1px solid rgba(255, 120, 151, .38); color: #ff7897; background: rgba(255, 120, 151, .06); font-size: .62rem; font-weight: 900; text-transform: uppercase; }
-.voice-score-panel .score-reset-button:disabled { cursor: wait; opacity: .45; }
+.voice-score-panel .live-score-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.voice-score-panel .score-reset-button, .voice-score-panel .score-finish-button { cursor: pointer; padding: 9px 10px; font-size: .62rem; font-weight: 900; text-transform: uppercase; }
+.voice-score-panel .score-reset-button { border: 1px solid rgba(255, 120, 151, .38); color: #ff7897; background: rgba(255, 120, 151, .06); }
+.voice-score-panel .score-finish-button { border: 1px solid rgba(255, 207, 74, .38); color: #ffcf4a; background: rgba(255, 207, 74, .07); }
+.voice-score-panel .score-reset-button:disabled, .voice-score-panel .score-finish-button:disabled { cursor: wait; opacity: .45; }
 .voice-score-panel small, .voice-score-panel p { margin: 0; color: #716879; font-size: .62rem; }
 .voice-score-panel ol { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
 .voice-score-panel li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 7px; padding: 7px; border: 1px solid rgba(167, 139, 250, .13); }

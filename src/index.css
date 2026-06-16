@@ -50,3 +50,117 @@ button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
   .app-loader-mark { animation-duration: 1.5s; }
 }
+
+.live-winner-backdrop {
+  position: fixed;
+  z-index: 50;
+  display: grid;
+  inset: 0;
+  padding: 24px;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 207, 74, .15), transparent 36%),
+    rgba(3, 1, 8, .97);
+}
+
+.live-winner-modal {
+  width: min(620px, 100%);
+  padding: clamp(28px, 5vw, 48px);
+  border: 1px solid rgba(255, 207, 74, .45);
+  background: linear-gradient(145deg, #181024, #0c0813);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .72);
+  text-align: center;
+}
+
+.live-winner-modal > span {
+  color: #ffcf4a;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+
+.live-winner-modal > div {
+  display: grid;
+  width: 74px;
+  height: 74px;
+  margin: 16px auto 12px;
+  place-items: center;
+  border-radius: 50%;
+  color: #15101c;
+  background: #ffcf4a;
+  box-shadow: 0 0 30px rgba(255, 207, 74, .34);
+  font-size: 2.2rem;
+}
+
+.live-winner-modal h2 {
+  margin: 0;
+  font: italic 900 clamp(1.8rem, 5vw, 3.4rem)/1.05 var(--font-display);
+  text-transform: uppercase;
+}
+
+.live-winner-modal > strong {
+  display: block;
+  margin-top: 8px;
+  color: #ffcf4a;
+  font: 800 clamp(1rem, 2vw, 1.35rem) var(--font-display);
+}
+
+.live-winner-modal ol {
+  display: grid;
+  gap: 7px;
+  margin: 24px 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+.live-winner-modal li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid rgba(167, 139, 250, .14);
+  background: rgba(255, 255, 255, .026);
+  text-align: left;
+}
+
+.live-winner-modal li span {
+  color: #716879;
+  font-weight: 800;
+}
+
+.live-winner-modal li b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.live-winner-modal li strong { color: #fff; }
+
+.live-winner-modal footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.live-winner-modal button {
+  min-height: 45px;
+  cursor: pointer;
+  border: 1px solid rgba(167, 139, 250, .25);
+  color: #aaa2b6;
+  background: rgba(167, 139, 250, .05);
+  font-size: .68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.live-winner-modal button:last-child {
+  border-color: rgba(255, 207, 74, .45);
+  color: #ffcf4a;
+}
+
+@media (max-width: 560px) {
+  .live-winner-modal footer { grid-template-columns: 1fr; }
+}

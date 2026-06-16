@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from '../../../auth/authContext'
+import LiveQuizWinnerDialog from '../../../buzzer/LiveQuizWinnerDialog'
 import { useBuzzer } from '../../../buzzer/useBuzzer'
 import {
   loadVoiceQuestions,
@@ -25,6 +26,7 @@ export default function VoiceQuizPage() {
   const [solutionVisible, setSolutionVisible] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [winnerVisible, setWinnerVisible] = useState(false)
 
   useEffect(() => {
     loadVoiceQuestions()
@@ -69,9 +71,16 @@ export default function VoiceQuizPage() {
   const restart = () => {
     setActiveIndex(0)
     resetRound()
+    setWinnerVisible(false)
     if (activeRoom) {
       void room.resetLiveQuizScores()
     }
+  }
+
+  const finishQuiz = () => {
+    if (!activeRoom || !room.state?.participants.length) return
+    if (!window.confirm('Quiz beenden und Gewinner anzeigen?')) return
+    setWinnerVisible(true)
   }
 
   const resetScores = () => {
@@ -167,14 +176,24 @@ export default function VoiceQuizPage() {
               <small>Richtig +1 · falsch -1</small>
             </div>
             {activeRoom && (
-              <button
-                className="score-reset-button"
-                disabled={room.busy}
-                onClick={resetScores}
-                type="button"
-              >
-                Punkte resetten
-              </button>
+              <div className="live-score-actions">
+                <button
+                  className="score-finish-button"
+                  disabled={room.busy || !room.state?.participants.length}
+                  onClick={finishQuiz}
+                  type="button"
+                >
+                  Quiz beenden
+                </button>
+                <button
+                  className="score-reset-button"
+                  disabled={room.busy}
+                  onClick={resetScores}
+                  type="button"
+                >
+                  Punkte resetten
+                </button>
+              </div>
             )}
             {!activeRoom ? (
               <p>Erstelle zuerst über „Einladung“ einen Spieleabend.</p>
@@ -230,6 +249,13 @@ export default function VoiceQuizPage() {
           )}
         </aside>
       </section>
+      {winnerVisible && room.state && (
+        <LiveQuizWinnerDialog
+          participants={room.state.participants}
+          onClose={() => setWinnerVisible(false)}
+          onRestart={restart}
+        />
+      )}
     </main>
   )
 }
