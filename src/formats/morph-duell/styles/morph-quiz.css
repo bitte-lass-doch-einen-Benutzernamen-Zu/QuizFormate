@@ -449,6 +449,22 @@
   gap: 2px;
 }
 
+.morph-score-panel .score-reset-button {
+  cursor: pointer;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 120, 151, .38);
+  color: #ff7897;
+  background: rgba(255, 120, 151, .06);
+  font-size: .62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.morph-score-panel .score-reset-button:disabled {
+  cursor: wait;
+  opacity: .45;
+}
+
 .morph-score-panel > div:first-child span {
   color: #ff4ecd;
   font-size: .62rem;

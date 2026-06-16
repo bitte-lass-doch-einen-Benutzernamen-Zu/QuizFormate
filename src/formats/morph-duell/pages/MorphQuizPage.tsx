@@ -73,6 +73,15 @@ export default function MorphQuizPage() {
   const restart = () => {
     setActiveIndex(0)
     resetRoundControls()
+    if (activeRoom) {
+      void room.resetLiveQuizScores()
+    }
+  }
+
+  const resetScores = () => {
+    if (!activeRoom || room.busy) return
+    if (!window.confirm('Punkte fuer dieses Live-Quiz zuruecksetzen?')) return
+    void room.resetLiveQuizScores()
   }
 
   if (loading) {
@@ -190,6 +199,16 @@ export default function MorphQuizPage() {
               <span>Punkte vergeben</span>
               <small>Beide richtig +3 · einer richtig +1 · falsch -1</small>
             </div>
+            {activeRoom && (
+              <button
+                className="score-reset-button"
+                disabled={room.busy}
+                onClick={resetScores}
+                type="button"
+              >
+                Punkte resetten
+              </button>
+            )}
             {!activeRoom ? (
               <p>Erstelle zuerst über „Einladung“ einen aktiven Spieleabend.</p>
             ) : room.loading ? (

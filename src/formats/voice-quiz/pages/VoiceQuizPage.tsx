@@ -69,6 +69,15 @@ export default function VoiceQuizPage() {
   const restart = () => {
     setActiveIndex(0)
     resetRound()
+    if (activeRoom) {
+      void room.resetLiveQuizScores()
+    }
+  }
+
+  const resetScores = () => {
+    if (!activeRoom || room.busy) return
+    if (!window.confirm('Punkte fuer dieses Live-Quiz zuruecksetzen?')) return
+    void room.resetLiveQuizScores()
   }
 
   if (loading) return <main className="voice-status">Hörquiz wird geladen...</main>
@@ -157,6 +166,16 @@ export default function VoiceQuizPage() {
               <span>Punkte vergeben</span>
               <small>Richtig +1 · falsch -1</small>
             </div>
+            {activeRoom && (
+              <button
+                className="score-reset-button"
+                disabled={room.busy}
+                onClick={resetScores}
+                type="button"
+              >
+                Punkte resetten
+              </button>
+            )}
             {!activeRoom ? (
               <p>Erstelle zuerst über „Einladung“ einen Spieleabend.</p>
             ) : room.state?.participants.length ? (

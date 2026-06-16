@@ -286,6 +286,8 @@ export function useBuzzer(roomId: string | undefined) {
         participant_user_id: userId,
         point_delta: points,
       }),
+    resetLiveQuizScores: () =>
+      runRpc('reset_live_quiz_scores', { check_room_id: roomId }),
     setMorphGuessMode: (mode: 'both' | 'one') =>
       runRpc('set_morph_guess_mode', {
         check_room_id: roomId,
