@@ -154,6 +154,12 @@ export function useBuzzer(roomId: string | undefined) {
         if (!active) return
         setLoading(false)
 
+        const reloadSnapshot = () => {
+          void loadSnapshot().catch((reason) => {
+            if (active) setError(getBuzzerError(reason))
+          })
+        }
+
         const channel = client
           .channel(`buzzer:${roomId}`)
           .on(
@@ -164,15 +170,33 @@ export function useBuzzer(roomId: string | undefined) {
               table: 'buzzer_states',
               filter: `room_id=eq.${roomId}`,
             },
-            () => {
-              void loadSnapshot().catch((reason) => {
-                if (active) setError(getBuzzerError(reason))
-              })
+            reloadSnapshot,
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'buzzer_entries',
+              filter: `room_id=eq.${roomId}`,
             },
+            reloadSnapshot,
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'room_text_entries',
+              filter: `room_id=eq.${roomId}`,
+            },
+            reloadSnapshot,
           )
           .subscribe()
+        const poll = window.setInterval(reloadSnapshot, 2500)
 
         cleanup = () => {
+          window.clearInterval(poll)
           void client.removeChannel(channel)
         }
       })
