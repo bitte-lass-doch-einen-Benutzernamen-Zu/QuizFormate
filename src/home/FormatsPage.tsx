@@ -1,4 +1,5 @@
 import './formats.css'
+import { preloadAdminRoute } from '../app/routes'
 
 type FormatCard = {
   title: string
@@ -99,16 +100,27 @@ export default function FormatsPage() {
             </>
           )
 
-          return format.href ? (
-            <a
-              className="format-card available"
-              href={format.href}
-              key={format.title}
-              style={{ '--format-accent': format.accent } as React.CSSProperties}
-            >
-              {content}
-            </a>
-          ) : (
+          if (format.href) {
+            const href = format.href
+
+            return (
+              <a
+                className="format-card available"
+                href={href}
+                key={format.title}
+                onFocus={() => preloadAdminRoute(href)}
+                onMouseEnter={() => preloadAdminRoute(href)}
+                onTouchStart={() => preloadAdminRoute(href)}
+                style={
+                  { '--format-accent': format.accent } as React.CSSProperties
+                }
+              >
+                {content}
+              </a>
+            )
+          }
+
+          return (
             <article
               className="format-card disabled"
               key={format.title}
