@@ -14,6 +14,8 @@ const loadVoiceQuizStudio = () =>
   import('../formats/voice-quiz/pages/VoiceQuizStudioPage')
 const loadVoiceQuiz = () =>
   import('../formats/voice-quiz/pages/VoiceQuizPage')
+const loadDuemmsteFliegt = () =>
+  import('../formats/duemmste-fliegt/pages/DuemmsteFliegtPage')
 
 const routeComponents: Record<string, ComponentType> = {
   '/': lazy(loadFormats),
@@ -24,6 +26,7 @@ const routeComponents: Record<string, ComponentType> = {
   '/answers': lazy(loadAnswers),
   '/voicequiz': lazy(loadVoiceQuizStudio),
   '/voicequiz/play': lazy(loadVoiceQuiz),
+  '/duemmste-fliegt': lazy(loadDuemmsteFliegt),
 }
 
 export function preloadAdminRoute(pathname: string) {
@@ -34,6 +37,7 @@ export function preloadAdminRoute(pathname: string) {
   if (pathname === '/morphduell/quiz') return loadMorphQuiz()
   if (pathname === '/voicequiz') return loadVoiceQuizStudio()
   if (pathname === '/voicequiz/play') return loadVoiceQuiz()
+  if (pathname === '/duemmste-fliegt') return loadDuemmsteFliegt()
   return loadFormats()
 }
 

@@ -33,6 +33,16 @@ const formats: FormatCard[] = [
     symbol: 'M',
   },
   {
+    title: 'Der Duemmste fliegt',
+    kicker: 'Eliminierung & Voting',
+    description:
+      'Show-Raster mit Kamera-Slots, Leben, Timer und Rauswurf-Steuerung.',
+    accent: '#f5ff42',
+    href: '/duemmste-fliegt',
+    badge: 'Spielbereit',
+    symbol: 'D',
+  },
+  {
     title: 'Bilderraten',
     kicker: 'Visuelles Quiz',
     description: 'Bildausschnitte, Zoomstufen und überraschende Auflösungen.',
