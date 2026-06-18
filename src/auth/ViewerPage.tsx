@@ -9,6 +9,7 @@ export default function ViewerPage() {
   const signOutRef = useRef(signOut)
   const buzzer = useBuzzer(guestAccess?.roomId)
   const [textDraft, setTextDraft] = useState('')
+  const [cameraOpen, setCameraOpen] = useState(false)
   const ownEntry = buzzer.state?.queue.find(
     (entry) => entry.userId === session?.user.id,
   )
@@ -98,6 +99,11 @@ export default function ViewerPage() {
       : buzzer.state?.isOpen
         ? 'Der Buzzer ist frei'
         : 'Warte auf die Spielleitung'
+  const cameraRoomUrl = guestAccess
+    ? `https://meet.jit.si/${encodeURIComponent(
+        `quiz-formate-ddf-${guestAccess.roomId}`,
+      )}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true`
+    : ''
 
   return (
     <main className={`buzzer-page${isWinner ? ' winner' : ''}`}>
@@ -224,6 +230,26 @@ export default function ViewerPage() {
           <p className="buzzer-hint">
             Der Server vergibt alle Plätze atomar in der echten Reihenfolge.
           </p>
+        )}
+
+        {guestAccess && (
+          <section className="viewer-camera-module">
+            <div>
+              <span>Kamera</span>
+              <h2>Der Duemmste fliegt</h2>
+              <p>Oeffne deine Kamera, wenn die Spielleitung den Kamera-Raum nutzt.</p>
+            </div>
+            <button onClick={() => setCameraOpen((open) => !open)} type="button">
+              {cameraOpen ? 'Kamera-Raum schliessen' : 'Kamera-Raum oeffnen'}
+            </button>
+            {cameraOpen && (
+              <iframe
+                allow="camera; microphone; fullscreen; display-capture"
+                src={cameraRoomUrl}
+                title="Kamera-Raum"
+              />
+            )}
+          </section>
         )}
       </section>
     </main>

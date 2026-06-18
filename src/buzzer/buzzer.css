@@ -864,6 +864,55 @@
   text-align: center;
 }
 
+.viewer-camera-module {
+  display: grid;
+  gap: 12px;
+  width: min(760px, 100%);
+  margin-top: 28px;
+  padding: 18px;
+  border: 1px solid rgba(0, 245, 212, .22);
+  background: rgba(255, 255, 255, .035);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, .28);
+}
+
+.viewer-camera-module span {
+  color: #00f5d4;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+}
+
+.viewer-camera-module h2 {
+  margin: 4px 0;
+  font: 900 clamp(1.2rem, 3vw, 2rem)/1 var(--font-display);
+  text-transform: uppercase;
+}
+
+.viewer-camera-module p {
+  margin: 0;
+  color: #aaa2b6;
+  line-height: 1.45;
+}
+
+.viewer-camera-module button {
+  min-height: 44px;
+  cursor: pointer;
+  border: 1px solid rgba(0, 245, 212, .36);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, .08);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.viewer-camera-module iframe {
+  width: 100%;
+  height: min(62vh, 520px);
+  min-height: 320px;
+  border: 0;
+  background: #05030b;
+}
+
 @media (max-width: 600px) {
   .buzzer-page { padding: 18px; }
   .buzzer-viewer-head { align-items: flex-start; }
