@@ -192,6 +192,16 @@ export function useBuzzer(roomId: string | undefined) {
             },
             reloadSnapshot,
           )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'game_night_participants',
+              filter: `room_id=eq.${roomId}`,
+            },
+            reloadSnapshot,
+          )
           .subscribe()
         const poll = window.setInterval(reloadSnapshot, 2500)
 

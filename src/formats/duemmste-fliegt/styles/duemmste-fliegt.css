@@ -130,6 +130,28 @@
   box-shadow: 0 16px 36px rgba(0, 0, 0, .34);
 }
 
+.ddf-empty {
+  display: grid;
+  grid-column: 1 / -1;
+  min-height: 180px;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  border: 1px dashed rgba(0, 245, 212, .28);
+  border-radius: 8px;
+  color: #d8d2f2;
+  background: rgba(0, 245, 212, .035);
+  text-align: center;
+}
+
+.ddf-empty span {
+  color: #00f5d4;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
 .ddf-player-card.danger {
   border-color: rgba(255, 207, 74, .42);
 }
@@ -326,6 +348,32 @@
   justify-content: space-between;
   gap: 14px;
   margin-bottom: 10px;
+}
+
+.ddf-camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ddf-camera-actions button,
+.ddf-camera-actions a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(0, 245, 212, .26);
+  border-radius: 8px;
+  color: #00f5d4;
+  background: rgba(0, 245, 212, .06);
+  font-size: .68rem;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.ddf-camera-actions button {
+  cursor: pointer;
 }
 
 .ddf-camera-room strong {

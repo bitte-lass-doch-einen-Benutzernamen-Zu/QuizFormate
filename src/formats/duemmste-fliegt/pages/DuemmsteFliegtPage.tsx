@@ -21,6 +21,7 @@ type LocalPlayer = {
 
 const maxLives = 3
 const roundSeconds = 29
+const questionCacheKey = 'quiz-formate:ddf:questions'
 
 const demoPlayers: LocalPlayer[] = [
   { id: 'local-1', name: 'Team Cyan' },
@@ -29,9 +30,10 @@ const demoPlayers: LocalPlayer[] = [
 ]
 
 function createPlayer(): LocalPlayer {
+  const id = crypto.randomUUID()
   return {
-    id: crypto.randomUUID(),
-    name: `Spieler ${crypto.randomUUID().slice(0, 4).toUpperCase()}`,
+    id,
+    name: `Spieler ${id.slice(0, 4).toUpperCase()}`,
   }
 }
 
@@ -48,17 +50,61 @@ function createMeetingUrl(roomId: string | undefined) {
   return `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true`
 }
 
+function createStorageKey(roomId: string | undefined) {
+  return `quiz-formate:ddf:state:${roomId ?? 'local'}`
+}
+
+function readStoredQuestions() {
+  try {
+    const saved = localStorage.getItem(questionCacheKey)
+    if (!saved) return fallbackDdfQuestions
+    const parsed = JSON.parse(saved) as DdfQuestion[]
+    return parsed.length ? parsed : fallbackDdfQuestions
+  } catch {
+    localStorage.removeItem(questionCacheKey)
+    return fallbackDdfQuestions
+  }
+}
+
+function readStoredState(storageKey: string) {
+  try {
+    const saved = localStorage.getItem(storageKey)
+    if (!saved) return null
+    return JSON.parse(saved) as {
+      localPlayers?: LocalPlayer[]
+      statsById?: Record<string, PlayerStats>
+      questionIndex?: number
+      round?: number
+      secondsLeft?: number
+      answerVisible?: boolean
+    }
+  } catch {
+    localStorage.removeItem(storageKey)
+    return null
+  }
+}
+
 export default function DuemmsteFliegtPage() {
   const { activeRoom } = useAuth()
   const room = useBuzzer(activeRoom?.roomId)
-  const [localPlayers, setLocalPlayers] = useState(demoPlayers)
-  const [statsById, setStatsById] = useState<Record<string, PlayerStats>>({})
-  const [questions, setQuestions] = useState<DdfQuestion[]>(fallbackDdfQuestions)
-  const [questionIndex, setQuestionIndex] = useState(0)
-  const [round, setRound] = useState(1)
-  const [secondsLeft, setSecondsLeft] = useState(roundSeconds)
+  const storageKey = createStorageKey(activeRoom?.roomId)
+  const storedState = useMemo(() => readStoredState(storageKey), [storageKey])
+  const [localPlayers, setLocalPlayers] = useState(
+    storedState?.localPlayers?.length ? storedState.localPlayers : demoPlayers,
+  )
+  const [statsById, setStatsById] = useState<Record<string, PlayerStats>>(
+    storedState?.statsById ?? {},
+  )
+  const [questions, setQuestions] = useState<DdfQuestion[]>(readStoredQuestions)
+  const [questionIndex, setQuestionIndex] = useState(storedState?.questionIndex ?? 0)
+  const [round, setRound] = useState(storedState?.round ?? 1)
+  const [secondsLeft, setSecondsLeft] = useState(
+    storedState?.secondsLeft ?? roundSeconds,
+  )
   const [timerRunning, setTimerRunning] = useState(false)
-  const [answerVisible, setAnswerVisible] = useState(false)
+  const [answerVisible, setAnswerVisible] = useState(
+    storedState?.answerVisible ?? false,
+  )
   const [cameraOpen, setCameraOpen] = useState(Boolean(activeRoom))
   const [questionLoading, setQuestionLoading] = useState(false)
   const [questionError, setQuestionError] = useState('')
@@ -92,6 +138,28 @@ export default function DuemmsteFliegtPage() {
     }, 1000)
     return () => window.clearInterval(interval)
   }, [timerActive])
+
+  useEffect(() => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        localPlayers,
+        statsById,
+        questionIndex,
+        round,
+        secondsLeft,
+        answerVisible,
+      }),
+    )
+  }, [
+    answerVisible,
+    localPlayers,
+    questionIndex,
+    round,
+    secondsLeft,
+    statsById,
+    storageKey,
+  ])
 
   const getStats = (id: string) => statsById[id] ?? createStats()
 
@@ -132,6 +200,14 @@ export default function DuemmsteFliegtPage() {
     resetRound()
   }
 
+  const previousQuestion = () => {
+    setQuestionIndex((current) =>
+      current === 0 ? questions.length - 1 : current - 1,
+    )
+    setRound((current) => Math.max(1, current - 1))
+    resetRound()
+  }
+
   const resetGame = () => {
     setStatsById({})
     setQuestionIndex(0)
@@ -153,7 +229,9 @@ export default function DuemmsteFliegtPage() {
       for (const question of [...fallbackDdfQuestions, ...batches.flat()]) {
         merged.set(question.id, question)
       }
-      setQuestions([...merged.values()])
+      const nextQuestions = [...merged.values()]
+      localStorage.setItem(questionCacheKey, JSON.stringify(nextQuestions))
+      setQuestions(nextQuestions)
       setQuestionIndex(0)
       resetRound()
     } catch (error) {
@@ -184,6 +262,12 @@ export default function DuemmsteFliegtPage() {
 
       <section className="ddf-layout">
         <section className="ddf-stage" aria-label="Kandidaten">
+          {players.length === 0 && (
+            <div className="ddf-empty">
+              <span>Keine Teilnehmer</span>
+              <strong>Teile den Invite-Code ueber Einladung.</strong>
+            </div>
+          )}
           {players.map((player, index) => {
             const stats = getStats(player.id)
             return (
@@ -292,6 +376,9 @@ export default function DuemmsteFliegtPage() {
           <button onClick={nextQuestion} type="button">
             Naechste Frage
           </button>
+          <button onClick={previousQuestion} type="button">
+            Vorige Frage
+          </button>
           <button
             disabled={questionLoading}
             onClick={loadOnlineQuestions}
@@ -336,6 +423,17 @@ export default function DuemmsteFliegtPage() {
           <div>
             <span>Kamera-Raum</span>
             <strong>Gaeste oeffnen denselben Raum in ihrer Viewer-UI.</strong>
+            <div className="ddf-camera-actions">
+              <button
+                onClick={() => void navigator.clipboard.writeText(meetingUrl)}
+                type="button"
+              >
+                Link kopieren
+              </button>
+              <a href={meetingUrl} rel="noreferrer" target="_blank">
+                Extern oeffnen
+              </a>
+            </div>
           </div>
           <iframe
             allow="camera; microphone; fullscreen; display-capture"

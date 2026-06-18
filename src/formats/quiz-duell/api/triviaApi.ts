@@ -108,12 +108,21 @@ async function translateText(text: string) {
 
 async function translateCandidates(candidates: TriviaCandidate[]) {
   const translated: TriviaCandidate[] = []
-  for (const candidate of candidates) {
-    const [question, answer] = await Promise.all([
-      translateText(candidate.question),
-      translateText(candidate.answer),
-    ])
-    translated.push({ ...candidate, question, answer })
+  const batchSize = 8
+
+  for (let index = 0; index < candidates.length; index += batchSize) {
+    const batch = candidates.slice(index, index + batchSize)
+    const translatedBatch = await Promise.all(
+      batch.map(async (candidate) => {
+        const [question, answer] = await Promise.all([
+          translateText(candidate.question),
+          translateText(candidate.answer),
+        ])
+        return { ...candidate, question, answer }
+      }),
+    )
+    translated.push(...translatedBatch)
   }
+
   return translated
 }

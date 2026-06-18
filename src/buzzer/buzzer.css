@@ -905,6 +905,26 @@
   text-transform: uppercase;
 }
 
+.viewer-camera-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.viewer-camera-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border: 1px solid rgba(167, 139, 250, .25);
+  color: #d8d2f2;
+  background: rgba(167, 139, 250, .06);
+  font-size: .72rem;
+  font-weight: 900;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
 .viewer-camera-module iframe {
   width: 100%;
   height: min(62vh, 520px);

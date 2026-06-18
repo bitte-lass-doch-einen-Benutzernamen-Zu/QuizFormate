@@ -242,6 +242,17 @@ export default function ViewerPage() {
             <button onClick={() => setCameraOpen((open) => !open)} type="button">
               {cameraOpen ? 'Kamera-Raum schliessen' : 'Kamera-Raum oeffnen'}
             </button>
+            <div className="viewer-camera-actions">
+              <button
+                onClick={() => void navigator.clipboard.writeText(cameraRoomUrl)}
+                type="button"
+              >
+                Link kopieren
+              </button>
+              <a href={cameraRoomUrl} rel="noreferrer" target="_blank">
+                Extern oeffnen
+              </a>
+            </div>
             {cameraOpen && (
               <iframe
                 allow="camera; microphone; fullscreen; display-capture"
