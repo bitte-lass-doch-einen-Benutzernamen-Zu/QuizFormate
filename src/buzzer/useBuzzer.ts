@@ -24,11 +24,19 @@ export type RoomParticipant = {
   points: number
 }
 
+export type RoomCameraFrame = {
+  userId: string
+  displayName: string
+  frameData: string
+  updatedAt: string
+}
+
 export type BuzzerState = {
   roomId: string
   isOpen: boolean
   buzzerVisible: boolean
   textInputVisible: boolean
+  cameraVisible: boolean
   morphGuessMode: 'both' | 'one'
   ownScore: number
   winnerUserId: string | null
@@ -38,6 +46,7 @@ export type BuzzerState = {
   queue: BuzzerEntry[]
   textEntries: RoomTextEntry[]
   participants: RoomParticipant[]
+  cameraFrames: RoomCameraFrame[]
 }
 
 type BuzzerPayload = {
@@ -45,6 +54,7 @@ type BuzzerPayload = {
   is_open: boolean
   buzzer_visible: boolean
   text_input_visible: boolean
+  camera_visible?: boolean
   morph_guess_mode?: 'both' | 'one'
   own_score?: number
   winner_user_id: string | null
@@ -71,6 +81,12 @@ type BuzzerPayload = {
     has_text: boolean
     points?: number
   }[]
+  camera_frames?: {
+    user_id: string
+    display_name: string
+    frame_data: string
+    updated_at: string
+  }[]
 }
 
 function parseBuzzerState(value: unknown): BuzzerState {
@@ -80,6 +96,7 @@ function parseBuzzerState(value: unknown): BuzzerState {
     isOpen: payload.is_open,
     buzzerVisible: payload.buzzer_visible,
     textInputVisible: payload.text_input_visible,
+    cameraVisible: payload.camera_visible ?? false,
     morphGuessMode: payload.morph_guess_mode ?? 'both',
     ownScore: payload.own_score ?? 0,
     winnerUserId: payload.winner_user_id,
@@ -105,6 +122,12 @@ function parseBuzzerState(value: unknown): BuzzerState {
       buzzerPosition: participant.buzzer_position,
       hasText: participant.has_text,
       points: participant.points ?? 0,
+    })),
+    cameraFrames: (payload.camera_frames ?? []).map((frame) => ({
+      userId: frame.user_id,
+      displayName: frame.display_name,
+      frameData: frame.frame_data,
+      updatedAt: frame.updated_at,
     })),
   }
 }
@@ -202,6 +225,16 @@ export function useBuzzer(roomId: string | undefined) {
             },
             reloadSnapshot,
           )
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'room_camera_frames',
+              filter: `room_id=eq.${roomId}`,
+            },
+            reloadSnapshot,
+          )
           .subscribe()
         const poll = window.setInterval(reloadSnapshot, 2500)
 
@@ -276,6 +309,27 @@ export function useBuzzer(roomId: string | undefined) {
     [busy, roomId],
   )
 
+  const runBackgroundRpc = useCallback(
+    async (functionName: string, args: Record<string, unknown>) => {
+      if (!roomId) return null
+      try {
+        const client = await getSupabaseClient()
+        const { data, error: actionError } = await client.rpc(functionName, args)
+        if (actionError) throw actionError
+        setState(parseBuzzerState(data))
+        return data
+      } catch (reason) {
+        setError(
+          reason instanceof Error
+            ? reason.message
+            : 'Raum-Aktion fehlgeschlagen.',
+        )
+        return null
+      }
+    },
+    [roomId],
+  )
+
   const currentState = state?.roomId === roomId ? state : null
 
   return {
@@ -287,7 +341,7 @@ export function useBuzzer(roomId: string | undefined) {
     open: () => runAction('control_buzzer', 'open'),
     lock: () => runAction('control_buzzer', 'lock'),
     reset: () => runAction('control_buzzer', 'reset'),
-    setFeature: (feature: 'buzzer' | 'text', enabled: boolean) =>
+    setFeature: (feature: 'buzzer' | 'text' | 'camera', enabled: boolean) =>
       runRpc('control_room_feature', {
         check_room_id: roomId,
         feature_name: feature,
@@ -300,6 +354,13 @@ export function useBuzzer(roomId: string | undefined) {
       }),
     clearTexts: () =>
       runRpc('clear_room_texts', { check_room_id: roomId }),
+    submitCameraFrame: (frameData: string) =>
+      runBackgroundRpc('submit_room_camera_frame', {
+        check_room_id: roomId,
+        frame_data: frameData,
+      }),
+    clearCameraFrame: () =>
+      runBackgroundRpc('clear_room_camera_frame', { check_room_id: roomId }),
     resetParticipant: (userId: string) =>
       runRpc('manage_room_participant', {
         check_room_id: roomId,

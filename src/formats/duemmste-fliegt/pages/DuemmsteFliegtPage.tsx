@@ -19,14 +19,22 @@ type LocalPlayer = {
   name: string
 }
 
+type PlayMode = 'players' | 'teams'
+
 const maxLives = 3
 const roundSeconds = 29
 const questionCacheKey = 'quiz-formate:ddf:questions'
 
 const demoPlayers: LocalPlayer[] = [
-  { id: 'local-1', name: 'Team Cyan' },
-  { id: 'local-2', name: 'Team Pink' },
-  { id: 'local-3', name: 'Team Gelb' },
+  { id: 'local-1', name: 'Spieler 1' },
+  { id: 'local-2', name: 'Spieler 2' },
+  { id: 'local-3', name: 'Spieler 3' },
+]
+
+const demoTeams: LocalPlayer[] = [
+  { id: 'team-1', name: 'Team Cyan' },
+  { id: 'team-2', name: 'Team Pink' },
+  { id: 'team-3', name: 'Team Gelb' },
 ]
 
 function createPlayer(): LocalPlayer {
@@ -43,11 +51,6 @@ function createStats(): PlayerStats {
 
 function formatTime(seconds: number) {
   return `00:${String(seconds).padStart(2, '0')}`
-}
-
-function createMeetingUrl(roomId: string | undefined) {
-  const roomName = encodeURIComponent(`quiz-formate-ddf-${roomId ?? 'demo'}`)
-  return `https://meet.jit.si/${roomName}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true`
 }
 
 function createStorageKey(roomId: string | undefined) {
@@ -77,6 +80,7 @@ function readStoredState(storageKey: string) {
       round?: number
       secondsLeft?: number
       answerVisible?: boolean
+      playMode?: PlayMode
     }
   } catch {
     localStorage.removeItem(storageKey)
@@ -105,7 +109,9 @@ export default function DuemmsteFliegtPage() {
   const [answerVisible, setAnswerVisible] = useState(
     storedState?.answerVisible ?? false,
   )
-  const [cameraOpen, setCameraOpen] = useState(Boolean(activeRoom))
+  const [playMode, setPlayMode] = useState<PlayMode>(
+    storedState?.playMode ?? 'players',
+  )
   const [questionLoading, setQuestionLoading] = useState(false)
   const [questionError, setQuestionError] = useState('')
 
@@ -126,7 +132,13 @@ export default function DuemmsteFliegtPage() {
 
   const activeQuestion = questions[questionIndex] ?? fallbackDdfQuestions[0]
   const timerActive = timerRunning && secondsLeft > 0
-  const meetingUrl = createMeetingUrl(activeRoom?.roomId)
+  const cameraFramesByUserId = useMemo(
+    () =>
+      new Map(
+        (room.state?.cameraFrames ?? []).map((frame) => [frame.userId, frame]),
+      ),
+    [room.state?.cameraFrames],
+  )
   const activeCount = players.filter(
     (player) => !(statsById[player.id] ?? createStats()).out,
   ).length
@@ -149,6 +161,7 @@ export default function DuemmsteFliegtPage() {
         round,
         secondsLeft,
         answerVisible,
+        playMode,
       }),
     )
   }, [
@@ -159,6 +172,7 @@ export default function DuemmsteFliegtPage() {
     secondsLeft,
     statsById,
     storageKey,
+    playMode,
   ])
 
   const getStats = (id: string) => statsById[id] ?? createStats()
@@ -175,6 +189,14 @@ export default function DuemmsteFliegtPage() {
       const lives = Math.max(0, stats.lives - 1)
       return { ...stats, lives, out: lives === 0 }
     })
+  }
+
+  const addLife = (id: string) => {
+    updateStats(id, (stats) => ({
+      ...stats,
+      lives: stats.lives + 1,
+      out: false,
+    }))
   }
 
   const removePlayer = (id: string, participant: RoomParticipant | null) => {
@@ -213,6 +235,14 @@ export default function DuemmsteFliegtPage() {
     setQuestionIndex(0)
     setRound(1)
     resetRound()
+  }
+
+  const switchPlayMode = (mode: PlayMode) => {
+    setPlayMode(mode)
+    if (!activeRoom) {
+      setLocalPlayers(mode === 'teams' ? demoTeams : demoPlayers)
+      setStatsById({})
+    }
   }
 
   const loadOnlineQuestions = async () => {
@@ -270,6 +300,8 @@ export default function DuemmsteFliegtPage() {
           )}
           {players.map((player, index) => {
             const stats = getStats(player.id)
+            const cameraFrame = cameraFramesByUserId.get(player.id)
+            const lifeSlots = Math.max(maxLives, stats.lives)
             return (
               <article
                 className={`ddf-player-card${stats.out ? ' out' : ''}${
@@ -278,7 +310,13 @@ export default function DuemmsteFliegtPage() {
                 key={player.id}
               >
                 <div className="ddf-player-main">
-                  <div className="ddf-avatar">{player.name.slice(0, 1)}</div>
+                  <div className="ddf-avatar">
+                    {cameraFrame ? (
+                      <img alt="" src={cameraFrame.frameData} />
+                    ) : (
+                      player.name.slice(0, 1)
+                    )}
+                  </div>
                   <div>
                     <span>Slot {index + 1}</span>
                     {activeRoom ? (
@@ -299,11 +337,16 @@ export default function DuemmsteFliegtPage() {
                       />
                     )}
                     <small>{stats.score} Punkte</small>
+                    {cameraFrame && (
+                      <time dateTime={cameraFrame.updatedAt}>
+                        Kamera live
+                      </time>
+                    )}
                   </div>
                 </div>
 
                 <div className="ddf-lives" aria-label={`${stats.lives} Leben`}>
-                  {Array.from({ length: maxLives }, (_, lifeIndex) => (
+                  {Array.from({ length: lifeSlots }, (_, lifeIndex) => (
                     <span
                       className={lifeIndex < stats.lives ? 'active' : ''}
                       key={lifeIndex}
@@ -327,6 +370,9 @@ export default function DuemmsteFliegtPage() {
                   </button>
                   <button onClick={() => loseLife(player.id)} type="button">
                     Leben -
+                  </button>
+                  <button onClick={() => addLife(player.id)} type="button">
+                    Leben +
                   </button>
                   <button
                     onClick={() =>
@@ -357,6 +403,22 @@ export default function DuemmsteFliegtPage() {
           <div>
             <span>Im Spiel</span>
             <strong>{activeCount}</strong>
+          </div>
+          <div className="ddf-mode-toggle" role="group" aria-label="Spielmodus">
+            <button
+              className={playMode === 'players' ? 'active' : ''}
+              onClick={() => switchPlayMode('players')}
+              type="button"
+            >
+              Einzelspieler
+            </button>
+            <button
+              className={playMode === 'teams' ? 'active' : ''}
+              onClick={() => switchPlayMode('teams')}
+              type="button"
+            >
+              Teams
+            </button>
           </div>
           <button
             onClick={() => {
@@ -394,9 +456,16 @@ export default function DuemmsteFliegtPage() {
               Spieler +
             </button>
           )}
-          <button onClick={() => setCameraOpen((open) => !open)} type="button">
-            {cameraOpen ? 'Kameras ausblenden' : 'Kameras anzeigen'}
-          </button>
+          {activeRoom && (
+            <button
+              onClick={() =>
+                void room.setFeature('camera', !room.state?.cameraVisible)
+              }
+              type="button"
+            >
+              {room.state?.cameraVisible ? 'Kameras sperren' : 'Kameras freigeben'}
+            </button>
+          )}
           <button onClick={resetGame} type="button">
             Reset
           </button>
@@ -418,30 +487,6 @@ export default function DuemmsteFliegtPage() {
         </div>
       </section>
 
-      {cameraOpen && (
-        <section className="ddf-camera-room">
-          <div>
-            <span>Kamera-Raum</span>
-            <strong>Gaeste oeffnen denselben Raum in ihrer Viewer-UI.</strong>
-            <div className="ddf-camera-actions">
-              <button
-                onClick={() => void navigator.clipboard.writeText(meetingUrl)}
-                type="button"
-              >
-                Link kopieren
-              </button>
-              <a href={meetingUrl} rel="noreferrer" target="_blank">
-                Extern oeffnen
-              </a>
-            </div>
-          </div>
-          <iframe
-            allow="camera; microphone; fullscreen; display-capture"
-            src={meetingUrl}
-            title="Der Duemmste fliegt Kamera-Raum"
-          />
-        </section>
-      )}
     </main>
   )
 }

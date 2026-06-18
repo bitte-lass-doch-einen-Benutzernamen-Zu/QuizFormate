@@ -7,9 +7,15 @@ import '../buzzer/buzzer.css'
 export default function ViewerPage() {
   const { guestAccess, session, signOut } = useAuth()
   const signOutRef = useRef(signOut)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const cameraTimerRef = useRef<number | null>(null)
+  const cameraVisibleRef = useRef(false)
   const buzzer = useBuzzer(guestAccess?.roomId)
   const [textDraft, setTextDraft] = useState('')
-  const [cameraOpen, setCameraOpen] = useState(false)
+  const [cameraStreaming, setCameraStreaming] = useState(false)
+  const [cameraError, setCameraError] = useState('')
   const ownEntry = buzzer.state?.queue.find(
     (entry) => entry.userId === session?.user.id,
   )
@@ -99,11 +105,74 @@ export default function ViewerPage() {
       : buzzer.state?.isOpen
         ? 'Der Buzzer ist frei'
         : 'Warte auf die Spielleitung'
-  const cameraRoomUrl = guestAccess
-    ? `https://meet.jit.si/${encodeURIComponent(
-        `quiz-formate-ddf-${guestAccess.roomId}`,
-      )}#config.prejoinPageEnabled=false&config.startWithAudioMuted=true`
-    : ''
+  const cleanupCameraResources = () => {
+    if (cameraTimerRef.current) {
+      window.clearInterval(cameraTimerRef.current)
+      cameraTimerRef.current = null
+    }
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
+  }
+
+  const stopCamera = () => {
+    cleanupCameraResources()
+    setCameraStreaming(false)
+    void buzzer.clearCameraFrame()
+  }
+
+  const submitCameraFrame = () => {
+    if (!cameraVisibleRef.current) {
+      stopCamera()
+      return
+    }
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || video.readyState < 2) return
+
+    canvas.width = 480
+    canvas.height = 270
+    const context = canvas.getContext('2d')
+    if (!context) return
+    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const frameData = canvas.toDataURL('image/jpeg', 0.58)
+    void buzzer.submitCameraFrame(frameData)
+  }
+
+  const startCamera = async () => {
+    if (!buzzer.state?.cameraVisible) return
+    try {
+      setCameraError('')
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          aspectRatio: 16 / 9,
+          facingMode: 'user',
+          width: { ideal: 640 },
+        },
+      })
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      setCameraStreaming(true)
+      submitCameraFrame()
+      cameraTimerRef.current = window.setInterval(submitCameraFrame, 1800)
+    } catch (error) {
+      setCameraError(
+        error instanceof Error
+          ? error.message
+          : 'Kamera konnte nicht gestartet werden.',
+      )
+    }
+  }
+
+  useEffect(() => {
+    cameraVisibleRef.current = Boolean(buzzer.state?.cameraVisible)
+  }, [buzzer.state?.cameraVisible])
+
+  useEffect(() => cleanupCameraResources, [])
 
   return (
     <main className={`buzzer-page${isWinner ? ' winner' : ''}`}>
@@ -237,28 +306,33 @@ export default function ViewerPage() {
             <div>
               <span>Kamera</span>
               <h2>Der Duemmste fliegt</h2>
-              <p>Oeffne deine Kamera, wenn die Spielleitung den Kamera-Raum nutzt.</p>
+              <p>
+                {buzzer.state?.cameraVisible
+                  ? 'Gib deine Kamera frei, damit die Spielleitung dich auf deiner Karte sieht.'
+                  : 'Die Spielleitung hat die Kamera derzeit nicht freigegeben.'}
+              </p>
             </div>
-            <button onClick={() => setCameraOpen((open) => !open)} type="button">
-              {cameraOpen ? 'Kamera-Raum schliessen' : 'Kamera-Raum oeffnen'}
+            <button
+              disabled={!buzzer.state?.cameraVisible}
+              onClick={cameraStreaming ? stopCamera : startCamera}
+              type="button"
+            >
+              {cameraStreaming ? 'Kamera stoppen' : 'Kamera freigeben'}
             </button>
-            <div className="viewer-camera-actions">
-              <button
-                onClick={() => void navigator.clipboard.writeText(cameraRoomUrl)}
-                type="button"
-              >
-                Link kopieren
-              </button>
-              <a href={cameraRoomUrl} rel="noreferrer" target="_blank">
-                Extern oeffnen
-              </a>
-            </div>
-            {cameraOpen && (
-              <iframe
-                allow="camera; microphone; fullscreen; display-capture"
-                src={cameraRoomUrl}
-                title="Kamera-Raum"
-              />
+            <video
+              className="viewer-camera-preview"
+              muted
+              playsInline
+              ref={videoRef}
+            />
+            <canvas
+              aria-hidden="true"
+              className="viewer-camera-canvas"
+              ref={canvasRef}
+            />
+            {cameraError && <p role="alert">{cameraError}</p>}
+            {cameraStreaming && (
+              <small className="viewer-camera-live">Kamera sendet an die Spielleitung.</small>
             )}
           </section>
         )}

@@ -23,8 +23,7 @@
 
 .ddf-topbar,
 .ddf-layout,
-.ddf-question-bar,
-.ddf-camera-room {
+.ddf-question-bar {
   position: relative;
   z-index: 1;
 }
@@ -163,17 +162,18 @@
 
 .ddf-player-main {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
 
 .ddf-avatar {
+  overflow: hidden;
   display: grid;
-  width: 56px;
-  height: 56px;
+  width: 92px;
+  height: 64px;
   place-items: center;
-  border-radius: 50%;
+  border-radius: 8px;
   color: #080410;
   background: #00f5d4;
   box-shadow: 0 0 22px rgba(0, 245, 212, .32);
@@ -181,9 +181,15 @@
   text-transform: uppercase;
 }
 
+.ddf-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .ddf-player-main span,
 .ddf-control-panel span,
-.ddf-camera-room span,
 .ddf-question-bar span {
   color: #a8a0bd;
   font-size: .68rem;
@@ -202,8 +208,18 @@
 }
 
 .ddf-player-main small {
+  display: block;
   color: #ffcf4a;
   font-weight: 800;
+}
+
+.ddf-player-main time {
+  display: block;
+  margin-top: 4px;
+  color: #00f5d4;
+  font-size: .68rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .ddf-player-main input {
@@ -238,7 +254,7 @@
 }
 
 .ddf-card-actions {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .ddf-card-actions button,
@@ -280,6 +296,20 @@
   justify-content: space-between;
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, .08);
+}
+
+.ddf-control-panel .ddf-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+}
+
+.ddf-mode-toggle button.active {
+  border-color: rgba(0, 245, 212, .55);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, .1);
 }
 
 .ddf-control-panel strong {
@@ -333,64 +363,6 @@
   color: #ffcf4a;
 }
 
-.ddf-camera-room {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 12px;
-  border: 1px solid rgba(167, 139, 250, .18);
-  border-radius: 8px;
-  background: rgba(14, 10, 24, .88);
-}
-
-.ddf-camera-room > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 10px;
-}
-
-.ddf-camera-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.ddf-camera-actions button,
-.ddf-camera-actions a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 12px;
-  border: 1px solid rgba(0, 245, 212, .26);
-  border-radius: 8px;
-  color: #00f5d4;
-  background: rgba(0, 245, 212, .06);
-  font-size: .68rem;
-  font-weight: 900;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.ddf-camera-actions button {
-  cursor: pointer;
-}
-
-.ddf-camera-room strong {
-  color: #d8d2f2;
-  font-size: .9rem;
-}
-
-.ddf-camera-room iframe {
-  display: block;
-  width: 100%;
-  height: min(58vh, 620px);
-  min-height: 360px;
-  border: 0;
-  border-radius: 8px;
-  background: #05030b;
-}
-
 @media (max-width: 1100px) {
   .ddf-layout {
     grid-template-columns: 1fr;
@@ -424,10 +396,6 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .ddf-camera-room > div {
-    align-items: start;
-    flex-direction: column;
-  }
 }
 
 @media (max-width: 520px) {
